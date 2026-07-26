@@ -5505,21 +5505,28 @@
     // ================================================================
 
     /**
-     * データソースバッジの表示を更新
+     * データソースバッジの表示を更新（読み込まれた総問題数を表示）
      */
     function updateDataSourceBadge() {
       const badge = document.getElementById('data-source-badge');
       if (!badge) return;
 
+      // 現在の問題バンクの総問題数をカウント
+      const totalQ = (questionBank.q1_journal ? questionBank.q1_journal.length : 0) +
+                     (questionBank.q2_commercial ? questionBank.q2_commercial.length : 0) +
+                     (questionBank.q3_commercial_closing ? questionBank.q3_commercial_closing.length : 0) +
+                     (questionBank.q4_industrial ? questionBank.q4_industrial.length : 0) +
+                     (questionBank.q5_industrial ? questionBank.q5_industrial.length : 0);
+
       if (dataSource === 'loading') {
         badge.className = 'data-badge loading';
-        badge.innerHTML = '⏳ 接続中...';
+        badge.innerHTML = '⏳ データを取得中...';
       } else if (dataSource === 'spreadsheet') {
         badge.className = 'data-badge live';
-        badge.innerHTML = '📡 スプレッドシート連携中';
+        badge.innerHTML = '📡 スプレッドシート連動中（全 ' + totalQ + ' 問）';
       } else {
         badge.className = 'data-badge local';
-        badge.innerHTML = '💾 ローカルデータ';
+        badge.innerHTML = '💾 ローカルデータ動作中（全 ' + totalQ + ' 問）';
       }
     }
 

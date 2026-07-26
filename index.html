@@ -5186,9 +5186,20 @@
         const text = await res.text();
         const raw = JSON.parse(text);
 
-        // ── 仕訳問題 → questionBank.q1_journal ──
-        if (raw['仕訳問題'] && raw['仕訳問題'].length > 0) {
-          const journalData = parseJournalData(raw['仕訳問題']);
+        // キー名のトリム・正規化対応ヘルパー
+        function getRawSheet(sheetName) {
+          if (!raw) return null;
+          if (raw[sheetName]) return raw[sheetName];
+          const keys = Object.keys(raw);
+          for (let k = 0; k < keys.length; k++) {
+            if (keys[k].trim() === sheetName) return raw[keys[k]];
+          }
+          return null;
+        }
+
+        const journalRows = getRawSheet('仕訳問題');
+        if (journalRows && journalRows.length > 0) {
+          const journalData = parseJournalData(journalRows);
           if (journalData.length > 0) {
             questionBank.q1_journal = journalData;
             console.log('[Loader] 仕訳問題: ' + journalData.length + '問 ロード完了');
@@ -5196,8 +5207,9 @@
         }
 
         // ── 商業簿記_総合 → q2_commercial + q3_commercial_closing ──
-        if (raw['商業簿記_総合'] && raw['商業簿記_総合'].length > 0) {
-          const commercialData = parseBigQuestionData(raw['商業簿記_総合']);
+        const commercialRows = getRawSheet('商業簿記_総合');
+        if (commercialRows && commercialRows.length > 0) {
+          const commercialData = parseBigQuestionData(commercialRows);
           if (commercialData.q2.length > 0) {
             questionBank.q2_commercial = commercialData.q2;
             console.log('[Loader] 第2問: ' + commercialData.q2.length + '問 ロード完了');
@@ -5209,8 +5221,9 @@
         }
 
         // ── 工業簿記_総合 → q4_industrial + q5_industrial ──
-        if (raw['工業簿記_総合'] && raw['工業簿記_総合'].length > 0) {
-          const industrialData = parseBigQuestionData(raw['工業簿記_総合']);
+        const industrialRows = getRawSheet('工業簿記_総合');
+        if (industrialRows && industrialRows.length > 0) {
+          const industrialData = parseBigQuestionData(industrialRows);
           if (industrialData.q4.length > 0) {
             questionBank.q4_industrial = industrialData.q4;
             console.log('[Loader] 第4問: ' + industrialData.q4.length + '問 ロード完了');
@@ -5222,8 +5235,9 @@
         }
 
         // ── 勘定科目マスタ → accountList + confusableGroups ──
-        if (raw['勘定科目マスタ'] && raw['勘定科目マスタ'].length > 0) {
-          const masterData = parseAccountMaster(raw['勘定科目マスタ']);
+        const masterRows = getRawSheet('勘定科目マスタ');
+        if (masterRows && masterRows.length > 0) {
+          const masterData = parseAccountMaster(masterRows);
           if (masterData.accounts.length > 0) {
             accountList.length = 0;
             masterData.accounts.forEach(a => accountList.push(a));
@@ -5237,8 +5251,9 @@
         }
 
         // ── 学習履歴 → learningHistory キャッシュ ──
-        if (raw['学習履歴'] && raw['学習履歴'].length > 0) {
-          raw['学習履歴'].forEach(row => {
+        const historyRows = getRawSheet('学習履歴');
+        if (historyRows && historyRows.length > 0) {
+          historyRows.forEach(row => {
             const qid = String(row.question_id || '').trim();
             if (qid) {
               learningHistory[qid] = {
@@ -5505,28 +5520,29 @@
     // ================================================================
 
     /**
-     * データソースバッジの表示を更新（読み込まれた総問題数を表示）
+     * データソースバッジの表示を更新（大問別の内訳を明示表示）
      */
     function updateDataSourceBadge() {
       const badge = document.getElementById('data-source-badge');
       if (!badge) return;
 
-      // 現在の問題バンクの総問題数をカウント
-      const totalQ = (questionBank.q1_journal ? questionBank.q1_journal.length : 0) +
-                     (questionBank.q2_commercial ? questionBank.q2_commercial.length : 0) +
-                     (questionBank.q3_commercial_closing ? questionBank.q3_commercial_closing.length : 0) +
-                     (questionBank.q4_industrial ? questionBank.q4_industrial.length : 0) +
-                     (questionBank.q5_industrial ? questionBank.q5_industrial.length : 0);
+      const q1Count = questionBank.q1_journal ? questionBank.q1_journal.length : 0;
+      const q2Count = questionBank.q2_commercial ? questionBank.q2_commercial.length : 0;
+      const q3Count = questionBank.q3_commercial_closing ? questionBank.q3_commercial_closing.length : 0;
+      const q4Count = questionBank.q4_industrial ? questionBank.q4_industrial.length : 0;
+      const q5Count = questionBank.q5_industrial ? questionBank.q5_industrial.length : 0;
+
+      const totalQ = q1Count + q2Count + q3Count + q4Count + q5Count;
 
       if (dataSource === 'loading') {
         badge.className = 'data-badge loading';
-        badge.innerHTML = '⏳ データを取得中...';
+        badge.innerHTML = '⏳ スプレッドシートから問題データを取得中...';
       } else if (dataSource === 'spreadsheet') {
         badge.className = 'data-badge live';
-        badge.innerHTML = '📡 スプレッドシート連動中（全 ' + totalQ + ' 問）';
+        badge.innerHTML = '📡 スプレッドシート連動中 (計 ' + totalQ + ' 問 [仕訳:' + q1Count + ' / 商業:' + (q2Count + q3Count) + ' / 工業:' + (q4Count + q5Count) + '])';
       } else {
         badge.className = 'data-badge local';
-        badge.innerHTML = '💾 ローカルデータ動作中（全 ' + totalQ + ' 問）';
+        badge.innerHTML = '💾 ローカルデータ動作中 (計 ' + totalQ + ' 問)';
       }
     }
 

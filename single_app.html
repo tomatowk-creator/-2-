@@ -1,0 +1,4084 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="簿記2級 ネット試験（CBT方式）を再現した模擬テストアプリケーション。ランダム出題で何度でも練習できます。">
+  <title>簿記2級 CBT模擬試験</title>
+  <style>
+/* ================================================================
+   簿記2級 CBT模擬試験 - スタイルシート
+   
+   本番のCBT試験に近い、白黒・グレー基調のシンプルで視認性の高いUI。
+   ブレークポイント: 768px（スマートフォン / PC）
+   ================================================================ */
+
+/* ---- リセット & ベース ---- */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Meiryo", "Noto Sans JP", sans-serif;
+  background-color: #f0f0f0;
+  color: #333;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+select, input {
+  font-family: inherit;
+  font-size: 16px; /* iOS Safariフォーカス時ズーム防止 */
+  touch-action: manipulation;
+}
+
+/* ---- 画面切替 ---- */
+.screen {
+  display: none;
+}
+
+.screen.active {
+  display: block;
+}
+
+/* ================================================================
+   スタート画面
+   ================================================================ */
+#screen-start {
+  display: none;
+  min-height: 100vh;
+  background: #fff;
+}
+
+#screen-start.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.start-container {
+  max-width: 560px;
+  width: 100%;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.start-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.start-subtitle {
+  font-size: 0.95rem;
+  color: #666;
+  margin-bottom: 32px;
+}
+
+.start-info {
+  text-align: left;
+  margin-bottom: 32px;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 20px;
+}
+
+.start-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.start-info-table th,
+.start-info-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e8e8e8;
+  font-size: 0.9rem;
+}
+
+.start-info-table th {
+  text-align: left;
+  color: #555;
+  font-weight: 600;
+  width: 40%;
+}
+
+.start-info-table td {
+  text-align: left;
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+.start-info-table tr:last-child th,
+.start-info-table tr:last-child td {
+  border-bottom: none;
+}
+
+.start-breakdown-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.start-breakdown ul {
+  list-style: none;
+  padding: 0;
+}
+
+.start-breakdown li {
+  font-size: 0.85rem;
+  color: #444;
+  padding: 3px 0;
+  padding-left: 16px;
+  position: relative;
+}
+
+.start-breakdown li::before {
+  content: "─";
+  position: absolute;
+  left: 0;
+  color: #aaa;
+}
+
+.btn-start {
+  display: inline-block;
+  padding: 14px 48px;
+  background: #2c2c2c;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  transition: background 0.2s;
+}
+
+.btn-start:hover {
+  background: #444;
+}
+
+.start-note {
+  margin-top: 16px;
+  font-size: 0.75rem;
+  color: #999;
+}
+
+/* ================================================================
+   試験画面 — Header（固定配置）
+   ================================================================ */
+#exam-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 12px;
+  background: #2c2c2c;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.header-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-home {
+  padding: 4px 10px;
+  background: #555;
+  color: #fff;
+  border: 1px solid #777;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-home:hover {
+  background: #777;
+}
+
+.header-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.header-center {
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+.timer {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  color: #fff;
+}
+
+.timer.warning {
+  color: #e53935;
+}
+
+.header-right {
+  flex: 1;
+  text-align: right;
+}
+
+.btn-finish {
+  padding: 6px 14px;
+  background: #c62828;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-finish:hover {
+  background: #e53935;
+}
+
+/* ================================================================
+   試験画面 — Main Contents（スクロール領域）
+   ================================================================ */
+#exam-main {
+  margin-top: 48px;   /* header分 */
+  margin-bottom: 96px; /* footer分 */
+  padding: 16px;
+  min-height: calc(100vh - 48px - 96px);
+}
+
+/* 小問番号ナビ */
+.sub-question-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: #e8e8e8;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;
+}
+
+.sub-question-nav .sub-q-label {
+  font-size: 0.85rem;
+}
+
+.sub-question-nav .sub-q-indicator {
+  display: flex;
+  gap: 6px;
+}
+
+.sub-question-nav .sub-q-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ccc;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sub-question-nav .sub-q-dot.active {
+  background: #2c2c2c;
+}
+
+.sub-question-nav .sub-q-dot.answered {
+  background: #4caf50;
+}
+
+.sub-question-nav .sub-q-dot.flagged {
+  border: 2px solid #ff9800;
+}
+
+/* 問題文エリア */
+.question-area {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 20px;
+  margin-bottom: 12px;
+}
+
+.question-area h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #2c2c2c;
+}
+
+.question-area p {
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+/* ---- 仕訳問題（第1問）専用レイアウト ---- */
+.journal-question-text {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #fafafa;
+  border-left: 3px solid #2c2c2c;
+}
+
+.journal-entry-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+.journal-entry-table th {
+  padding: 8px 6px;
+  background: #2c2c2c;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.journal-entry-table td {
+  padding: 6px;
+  border: 1px solid #ddd;
+  vertical-align: middle;
+}
+
+.journal-entry-table .side-label {
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #555;
+  background: #f5f5f5;
+  width: 30px;
+}
+
+.journal-entry-table select {
+  width: 100%;
+  padding: 6px 4px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: #fff;
+  font-size: 0.85rem;
+  appearance: auto;
+}
+
+.journal-entry-table input[type="text"] {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  text-align: right;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.journal-entry-table input[type="text"]:focus,
+.journal-entry-table select:focus {
+  outline: none;
+  border-color: #2c2c2c;
+  box-shadow: 0 0 0 2px rgba(44, 44, 44, 0.15);
+}
+
+/* ---- 第2〜5問: contentHTML内の表・入力欄 ---- */
+.question-area table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+
+.question-area table th,
+.question-area table td {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  font-size: 0.85rem;
+}
+
+.question-area table th {
+  background: #f0f0f0;
+  font-weight: 600;
+  text-align: center;
+}
+
+.question-area table td {
+  text-align: right;
+}
+
+.question-area table td.text-left {
+  text-align: left;
+}
+
+.question-area table td.text-center {
+  text-align: center;
+}
+
+/* contentHTML内の入力フィールド */
+.blank-input {
+  display: inline-block;
+  width: 140px;
+  padding: 5px 8px;
+  border: 1px solid #999;
+  border-radius: 3px;
+  text-align: right;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  background: #fffff0;
+}
+
+.blank-input:focus {
+  outline: none;
+  border-color: #2c2c2c;
+  box-shadow: 0 0 0 2px rgba(44, 44, 44, 0.15);
+  background: #fff;
+}
+
+.blank-select {
+  display: inline-block;
+  min-width: 120px;
+  padding: 5px 4px;
+  border: 1px solid #999;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  background: #fffff0;
+  appearance: auto;
+}
+
+.blank-select:focus {
+  outline: none;
+  border-color: #2c2c2c;
+  box-shadow: 0 0 0 2px rgba(44, 44, 44, 0.15);
+  background: #fff;
+}
+
+/* 見直しチェック */
+.review-check-area {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-check-area label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #666;
+  cursor: pointer;
+  user-select: none;
+}
+
+.review-check-area input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #ff9800;
+  cursor: pointer;
+}
+
+/* ================================================================
+   Footer Navigation（固定配置）
+   ================================================================ */
+#exam-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #fff;
+  border-top: 1px solid #ddd;
+  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.footer-tabs {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px 0;
+  background: #fafafa;
+  border: none;
+  border-right: 1px solid #e0e0e0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #666;
+  position: relative;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab-btn:last-child {
+  border-right: none;
+}
+
+.tab-btn.active {
+  background: #2c2c2c;
+  color: #fff;
+}
+
+.tab-btn:hover:not(.active) {
+  background: #eee;
+}
+
+/* 未回答マーク（●） */
+.tab-btn .unanswered-mark {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: #e53935;
+  border-radius: 50%;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.tab-btn.active .unanswered-mark {
+  background: #ff8a80;
+}
+
+.footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+}
+
+.sub-nav-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.sub-nav-buttons button {
+  padding: 6px 16px;
+  background: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #444;
+  transition: background 0.15s;
+}
+
+.sub-nav-buttons button:hover {
+  background: #e8e8e8;
+}
+
+.sub-nav-buttons button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-review {
+  padding: 6px 16px;
+  background: #fff;
+  border: 1px solid #999;
+  border-radius: 3px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #444;
+  transition: background 0.15s;
+}
+
+.btn-review:hover {
+  background: #f5f5f5;
+}
+
+/* ================================================================
+   モーダル共通
+   ================================================================ */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 6px;
+  width: 90%;
+  max-width: 520px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal-confirm {
+  max-height: none;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.btn-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: #999;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.btn-modal-close:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 16px 18px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-body p {
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.modal-warning {
+  color: #c62828;
+  font-weight: 600;
+}
+
+.modal-footer {
+  padding: 12px 18px;
+  border-top: 1px solid #e0e0e0;
+  text-align: right;
+}
+
+.modal-footer-confirm {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn-modal-action {
+  padding: 8px 20px;
+  background: #2c2c2c;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-modal-action:hover {
+  background: #444;
+}
+
+.btn-modal-cancel {
+  padding: 8px 20px;
+  background: #f5f5f5;
+  color: #444;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.btn-modal-cancel:hover {
+  background: #e8e8e8;
+}
+
+/* ---- 見直し一覧のリスト ---- */
+.review-list-section {
+  margin-bottom: 16px;
+}
+
+.review-list-section-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  padding: 6px 0;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.review-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-radius: 3px;
+}
+
+.review-list-item:hover {
+  background: #f5f5f5;
+}
+
+.review-list-item-label {
+  font-size: 0.82rem;
+  color: #333;
+}
+
+.review-list-item-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.status-unanswered {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.status-answered {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-flagged {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+/* ================================================================
+   採点結果画面
+   ================================================================ */
+#screen-result {
+  min-height: 100vh;
+  background: #f0f0f0;
+  padding: 20px 16px;
+}
+
+.result-container {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.result-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+/* 合計得点・合否 */
+.result-summary {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.result-total-score {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.result-total-score span {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #666;
+}
+
+.result-pass {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 6px 24px;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.result-pass.pass {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 2px solid #4caf50;
+}
+
+.result-pass.fail {
+  background: #ffebee;
+  color: #c62828;
+  border: 2px solid #e53935;
+}
+
+/* 大問ごとの得点 */
+.result-breakdown {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.result-breakdown h2 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.result-breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.result-breakdown-table th,
+.result-breakdown-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e8e8e8;
+  font-size: 0.85rem;
+}
+
+.result-breakdown-table th {
+  text-align: left;
+  color: #555;
+  font-weight: 600;
+}
+
+.result-breakdown-table td {
+  text-align: center;
+  font-weight: 500;
+}
+
+.result-breakdown-table td.score-cell {
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.result-breakdown-table tr:last-child th,
+.result-breakdown-table tr:last-child td {
+  border-bottom: none;
+}
+
+.result-breakdown-bar {
+  display: inline-block;
+  height: 8px;
+  background: #4caf50;
+  border-radius: 4px;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+/* 詳細: 不正解箇所 */
+.result-details {
+  margin-bottom: 24px;
+}
+
+.result-detail-section {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.result-detail-section h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #2c2c2c;
+}
+
+.result-detail-section h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;
+  margin: 14px 0 8px;
+}
+
+/* 仕訳結果テーブル */
+.result-journal-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+  font-size: 0.82rem;
+}
+
+.result-journal-table th {
+  padding: 6px 8px;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  font-weight: 600;
+  text-align: center;
+}
+
+.result-journal-table td {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+}
+
+/* 正解・不正解のハイライト */
+.result-correct {
+  background: #e8f5e9;
+}
+
+.result-incorrect {
+  background: #ffebee;
+}
+
+.result-answer-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+  font-size: 0.82rem;
+  padding: 6px 8px;
+  border-radius: 3px;
+}
+
+.result-answer-row.correct {
+  background: #e8f5e9;
+}
+
+.result-answer-row.incorrect {
+  background: #ffebee;
+}
+
+.result-answer-label {
+  font-weight: 600;
+  color: #555;
+  min-width: 70px;
+}
+
+.result-answer-yours {
+  color: #c62828;
+}
+
+.result-answer-correct {
+  color: #2e7d32;
+}
+
+.result-points-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 4px;
+  background: #f5f5f5;
+  color: #555;
+  border: 1px solid #ddd;
+}
+
+/* やり直しボタン */
+.result-actions {
+  text-align: center;
+  padding: 16px 0 40px;
+}
+
+.btn-retry {
+  padding: 14px 40px;
+  background: #2c2c2c;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transition: background 0.2s;
+}
+
+.btn-retry:hover {
+  background: #444;
+}
+
+/* ================================================================
+   レスポンシブ対応（768px以下: スマートフォン）
+   ================================================================ */
+@media (max-width: 768px) {
+  .start-container {
+    padding: 32px 16px;
+  }
+
+  .start-title {
+    font-size: 1.4rem;
+  }
+
+  #exam-header {
+    height: 44px;
+    padding: 0 8px;
+  }
+
+  .header-title {
+    font-size: 0.72rem;
+  }
+
+  .timer {
+    font-size: 1.1rem;
+  }
+
+  .btn-finish {
+    padding: 5px 10px;
+    font-size: 0.72rem;
+  }
+
+  #exam-main {
+    margin-top: 44px;
+    margin-bottom: 90px;
+    padding: 10px;
+  }
+
+  .question-area {
+    padding: 14px;
+  }
+
+  .question-area h2 {
+    font-size: 0.95rem;
+  }
+
+  .journal-entry-table th,
+  .journal-entry-table td {
+    padding: 4px 3px;
+    font-size: 0.78rem;
+  }
+
+  .journal-entry-table select {
+    font-size: 0.78rem;
+    padding: 4px 2px;
+  }
+
+  .journal-entry-table input[type="text"] {
+    font-size: 0.78rem;
+    padding: 4px 6px;
+  }
+
+  .blank-input {
+    width: 110px;
+    font-size: 0.8rem;
+  }
+
+  .blank-select {
+    min-width: 100px;
+    font-size: 0.8rem;
+  }
+
+  .tab-btn {
+    padding: 8px 0;
+    font-size: 0.7rem;
+  }
+
+  .footer-actions {
+    padding: 4px 8px;
+  }
+
+  .sub-nav-buttons button {
+    padding: 5px 12px;
+    font-size: 0.72rem;
+  }
+
+  .btn-review {
+    padding: 5px 12px;
+    font-size: 0.72rem;
+  }
+
+  .modal-content {
+    width: 95%;
+    max-height: 85vh;
+  }
+
+  .result-total-score {
+    font-size: 2rem;
+  }
+
+  .result-detail-section {
+    padding: 12px 14px;
+  }
+}
+
+/* ================================================================
+   トレーニングモード & 解説表示
+   ================================================================ */
+
+.start-mode-selection {
+  margin-bottom: 24px;
+}
+
+.mode-tabs {
+  display: flex;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #ddd;
+}
+
+.mode-tab-btn {
+  flex: 1;
+  padding: 12px;
+  background: #f5f5f5;
+  border: none;
+  font-weight: bold;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.mode-tab-btn.active {
+  background: #2c2c2c;
+  color: #fff;
+}
+
+.mode-panel {
+  display: none;
+}
+
+.mode-panel.active {
+  display: block;
+}
+
+.training-options {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.option-group {
+  margin-bottom: 16px;
+}
+
+.option-group:last-child {
+  margin-bottom: 0;
+}
+
+.option-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #444;
+}
+
+.option-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+/* 単問解説エリア */
+.training-action-area {
+  margin-top: 16px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.btn-check {
+  padding: 12px 32px;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-check:hover {
+  background: #1565c0;
+}
+
+.explanation-area {
+  background: #fff;
+  border: 2px solid #1976d2;
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.explanation-title {
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.explanation-title.correct {
+  color: #2e7d32;
+}
+
+.explanation-title.incorrect {
+  color: #c62828;
+}
+
+.explanation-text {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #333;
+  background: #f9f9f9;
+  padding: 12px;
+  border-radius: 4px;
+  border-left: 4px solid #1976d2;
+}
+
+
+</style>
+</head>
+<body>
+
+  <!-- ================================================================
+    簿記2級 CBT模擬試験アプリ
+    
+    【永続化方針】
+    本番のテストセンター試験を再現するため、localStorage等による
+    保存は一切行わない。ページをリロードすると進行状況は失われ、
+    新しい問題セットで最初からやり直しとなる。
+  ================================================================ -->
+
+  <!-- ========== スタート画面 ========== -->
+  <div id="screen-start" class="screen active">
+    <div class="start-container">
+      <h1 class="start-title">簿記2級 模擬試験</h1>
+      <p class="start-subtitle">ネット試験（CBT方式）模擬テスト</p>
+      <div class="start-mode-selection">
+        <div class="mode-tabs">
+          <button id="tab-mode-exam" class="mode-tab-btn active">模擬試験モード</button>
+          <button id="tab-mode-training" class="mode-tab-btn">トレーニングモード</button>
+        </div>
+
+        <!-- 模擬試験モードの説明 -->
+        <div id="panel-mode-exam" class="mode-panel active">
+          <div class="start-info">
+            <table class="start-info-table">
+              <tbody>
+                <tr><th>試験時間</th><td>90分</td></tr>
+                <tr><th>合計配点</th><td>100点</td></tr>
+                <tr><th>合格基準</th><td>70点以上</td></tr>
+                <tr><th>出題形式</th><td>本番同等ランダム抽出</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <button id="btn-start-exam" class="btn-start">試験を開始する</button>
+        </div>
+
+        <!-- トレーニングモードの設定 -->
+        <div id="panel-mode-training" class="mode-panel">
+          <div class="training-options">
+            <div class="option-group">
+              <label>出題モード:</label>
+              <select id="training-type-select">
+                <option value="category">分野別トレーニング</option>
+                <option value="random">完全ランダム出題</option>
+                <option value="review">復習（間違えた問題のみ）</option>
+              </select>
+            </div>
+            <div class="option-group" id="group-category-select">
+              <label>対象分野:</label>
+              <select id="training-category-select">
+                <option value="q1">第1問：仕訳問題</option>
+                <option value="q2">第2問：商業簿記 個別</option>
+                <option value="q3">第3問：商業簿記 決算</option>
+                <option value="q4">第4問：工業簿記 仕訳/個別</option>
+                <option value="q5">第5問：工業簿記 総合原価計算等</option>
+              </select>
+            </div>
+            <div class="option-group">
+              <label>出題数:</label>
+              <select id="training-count-select">
+                <option value="5">5問</option>
+                <option value="10">10問</option>
+                <option value="all">全問</option>
+              </select>
+            </div>
+          </div>
+          <button id="btn-start-training" class="btn-start">トレーニングを開始</button>
+        </div>
+      </div>
+      <p class="start-note">※ ページをリロードすると進行状況はリセットされます</p>
+    </div>
+  </div>
+
+  <!-- ========== 試験画面 ========== -->
+  <div id="screen-exam" class="screen">
+
+    <!-- ---- Header（固定配置） ---- -->
+    <header id="exam-header">
+      <div class="header-left">
+        <button id="btn-home" class="btn-home">ホーム</button>
+        <span class="header-title">簿記2級 模擬試験</span>
+      </div>
+      <div class="header-center">
+        <span id="timer-display" class="timer">90:00</span>
+      </div>
+      <div class="header-right">
+        <button id="btn-finish-exam" class="btn-finish">試験終了</button>
+      </div>
+    </header>
+
+    <!-- ---- Main Contents（スクロール領域） ---- -->
+    <main id="exam-main">
+
+      <!-- 小問番号表示 -->
+      <div id="sub-question-nav" class="sub-question-nav">
+        <!-- 例: 第2問 (2) / 全4問 — app.jsが動的に生成 -->
+      </div>
+
+      <!-- 解答エリア -->
+      <div id="question-area" class="question-area">
+        <!-- app.jsが動的に問題文・解答フォームを生成 -->
+      </div>
+
+      <!-- トレーニングモード用：単問回答・解説アクション -->
+      <div id="training-action-area" class="training-action-area" style="display: none;">
+        <button id="btn-check-answer" class="btn-check">回答する・解説を表示</button>
+      </div>
+
+      <!-- 単問採点・解説エリア（トレーニング用） -->
+      <div id="explanation-area" class="explanation-area" style="display: none;">
+        <!-- 成否判定と解説 -->
+      </div>
+
+      <!-- 見直しチェック（第1問用：小問ごとに表示） -->
+      <div id="review-check-area" class="review-check-area">
+        <!-- app.jsが動的に生成 -->
+      </div>
+
+    </main>
+
+    <!-- ---- Footer Navigation（固定配置） ---- -->
+    <footer id="exam-footer">
+      <div class="footer-tabs">
+        <button class="tab-btn active" data-question="1">第1問</button>
+        <button class="tab-btn" data-question="2">第2問</button>
+        <button class="tab-btn" data-question="3">第3問</button>
+        <button class="tab-btn" data-question="4">第4問</button>
+        <button class="tab-btn" data-question="5">第5問</button>
+      </div>
+      <div class="footer-actions">
+        <!-- 第1問用: 小問ナビゲーション -->
+        <div id="sub-nav-buttons" class="sub-nav-buttons">
+          <!-- app.jsが動的に「前の問題」「次の問題」ボタンを生成 -->
+        </div>
+        <button id="btn-review-list" class="btn-review">見直し一覧</button>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ========== 見直し一覧モーダル ========== -->
+  <div id="modal-review" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">見直し一覧</h2>
+        <button id="btn-close-review" class="btn-modal-close">&times;</button>
+      </div>
+      <div id="review-list-body" class="modal-body">
+        <!-- app.jsが全大問・全小問のステータス一覧を動的に生成 -->
+      </div>
+      <div class="modal-footer">
+        <button id="btn-close-review-bottom" class="btn-modal-action">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 試験終了確認ダイアログ ========== -->
+  <div id="modal-confirm-finish" class="modal-overlay">
+    <div class="modal-content modal-confirm">
+      <div class="modal-header">
+        <h2 class="modal-title">試験終了の確認</h2>
+      </div>
+      <div class="modal-body">
+        <p>試験を終了して採点を行いますか？</p>
+        <p class="modal-warning">未回答の問題は不正解として採点されます。</p>
+      </div>
+      <div class="modal-footer modal-footer-confirm">
+        <button id="btn-confirm-cancel" class="btn-modal-cancel">戻る</button>
+        <button id="btn-confirm-finish" class="btn-modal-action">試験を終了する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 中断してホームに戻る確認ダイアログ ========== -->
+  <div id="modal-confirm-home" class="modal-overlay">
+    <div class="modal-content modal-confirm">
+      <div class="modal-header">
+        <h2 class="modal-title">ホームへ戻る（テストの中断）</h2>
+      </div>
+      <div class="modal-body">
+        <p>ホームに戻りますか？</p>
+        <p class="modal-warning">現在のテスト・トレーニングは中断され、進行状況や回答は破棄されます。</p>
+      </div>
+      <div class="modal-footer modal-footer-confirm">
+        <button id="btn-home-cancel" class="btn-modal-cancel">続ける</button>
+        <button id="btn-home-confirm" class="btn-modal-action">中断してホームに戻る</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 採点結果画面 ========== -->
+  <div id="screen-result" class="screen">
+    <div class="result-container">
+      <h1 class="result-title">採点結果</h1>
+
+      <!-- 合計得点 & 合否判定 -->
+      <div id="result-summary" class="result-summary">
+        <!-- app.jsが動的に生成 -->
+      </div>
+
+      <!-- 大問ごとの得点 -->
+      <div id="result-breakdown" class="result-breakdown">
+        <!-- app.jsが動的に生成 -->
+      </div>
+
+      <!-- 詳細（不正解箇所のハイライト） -->
+      <div id="result-details" class="result-details">
+        <!-- app.jsが動的に生成 -->
+      </div>
+
+      <!-- やり直し & ホームに戻るボタン -->
+      <div class="result-actions">
+        <button id="btn-retry" class="btn-retry">新しい問題でテストをやり直す</button>
+        <button id="btn-result-home" class="btn-retry" style="background:#555; margin-left:12px;">ホームに戻る</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- スクリプト読み込み（data.js → app.js の順） -->
+  <script>
+/* ================================================================
+   簿記2級 CBT模擬試験 - マスターデータ (data.js)
+   
+   【永続化方針】
+   このファイルは問題プールと勘定科目マスタを定義するのみ。
+   localStorage等への保存は一切行わない。
+   
+   【問題の追加方法】
+   各プール配列（q1_journal, q2_commercial, ...）に同じ構造の
+   オブジェクトを追加するだけで出題候補に含まれます。
+   - 第1問: answers配列にdebit/creditの行を定義
+   - 第2〜5問: contentHTML内に {{blank:id}} プレースホルダを埋め込み、
+     answerFormで各blankの正解・配点を定義（合計20点になるように）
+   ================================================================ */
+
+// ================================================================
+// 勘定科目マスタ（共通プルダウン用）
+// ================================================================
+const accountList = [
+  // 資産
+  "現金", "当座預金", "普通預金", "定期預金",
+  "受取手形", "売掛金", "クレジット売掛金", "電子記録債権",
+  "有価証券", "売買目的有価証券", "満期保有目的債券",
+  "その他有価証券", "子会社株式", "関連会社株式",
+  "商品", "製品", "仕掛品", "原材料",
+  "前払金", "前払費用", "未収入金", "未収収益",
+  "貸倒引当金", "建物", "備品", "車両運搬具",
+  "機械装置", "土地", "建設仮勘定",
+  "のれん", "特許権", "ソフトウェア",
+  "建物減価償却累計額", "備品減価償却累計額",
+  "車両運搬具減価償却累計額", "機械装置減価償却累計額",
+  "仮払金", "仮払法人税等", "仮払消費税",
+  // 負債
+  "支払手形", "買掛金", "電子記録債務",
+  "短期借入金", "長期借入金", "未払金", "未払費用",
+  "未払法人税等", "未払消費税", "未払配当金", "前受金", "前受収益",
+  "預り金", "当座借越", "繰越商品",
+  "仮受金", "仮受消費税",
+  "賞与引当金", "修繕引当金", "退職給付引当金",
+  "商品保証引当金", "返品調整引当金",
+  "社債",
+  // 純資産
+  "資本金", "資本準備金", "その他資本剰余金",
+  "利益準備金", "別途積立金", "繰越利益剰余金",
+  "自己株式",
+  // 収益
+  "売上", "商品売買益", "受取利息", "受取配当金",
+  "有価証券利息", "有価証券売却益", "有価証券評価益",
+  "固定資産売却益",
+  "為替差益", "雑益", "雑収入",
+  "貸倒引当金戻入", "償却債権取立益",
+  "負ののれん発生益",
+  // 費用
+  "仕入", "発送費", "給料", "法定福利費",
+  "広告宣伝費", "旅費交通費", "通信費", "消耗品費",
+  "水道光熱費", "支払家賃", "保険料", "修繕費",
+  "租税公課", "支払利息", "手形売却損",
+  "貸倒引当金繰入", "貸倒損失",
+  "減価償却費", "のれん償却",
+  "有価証券売却損", "有価証券評価損",
+  "固定資産売却損", "固定資産圧縮損",
+  "為替差損", "雑損", "雑損失",
+  "棚卸減耗損", "商品評価損",
+  "法人税等", "法人税、住民税及び事業税",
+  // 工業簿記特有
+  "材料", "賃金", "賃金・給料",
+  "製造間接費", "仕掛品", "製品",
+  "月次損益",
+  "賃率差異", "材料消費価格差異",
+  "製造間接費配賦差異", "予算差異", "操業度差異",
+  // その他
+  "損益", "繰越利益剰余金", "受取手形割引義務見返", "受取手形割引義務",
+  "差入保証金", "長期前払費用",
+  "研究開発費", "ソフトウェア仮勘定",
+  "株式交付費", "社債発行費",
+  "支払手数料"
+];
+
+
+// ================================================================
+// 混同しやすい勘定科目グループ（ダミー選択肢の動的生成用）
+//
+// 同じグループ内の科目は、受験生が間違えやすい組み合わせ。
+// app.js が正解科目の属するグループからダミーを自動抽出する。
+// 1つの科目が複数グループに属してもよい（多角的な混同パターン）。
+// ================================================================
+const confusableGroups = [
+  // 現金・預金系
+  ["現金", "当座預金", "普通預金", "定期預金", "当座借越"],
+  // 売上債権系
+  ["売掛金", "受取手形", "電子記録債権", "クレジット売掛金", "未収入金"],
+  // 仕入債務系
+  ["買掛金", "支払手形", "電子記録債務", "未払金", "未払費用"],
+  // 売掛金 ⇔ 買掛金（借方貸方の混同）
+  ["売掛金", "買掛金"],
+  // 受取手形 ⇔ 支払手形
+  ["受取手形", "支払手形"],
+  // 電子記録債権 ⇔ 電子記録債務
+  ["電子記録債権", "電子記録債務"],
+  // 売上・仕入の混同
+  ["売上", "仕入", "売掛金", "買掛金", "前受金", "前払金"],
+  // 前払・前受・未払・未収の経過勘定
+  ["前払金", "前払費用", "前受金", "前受収益", "未払金", "未払費用", "未収入金", "未収収益"],
+  // 保険料・家賃と経過勘定
+  ["保険料", "支払家賃", "前払費用", "未払費用", "長期前払費用"],
+  // 貸倒関連
+  ["貸倒引当金", "貸倒引当金繰入", "貸倒引当金戻入", "貸倒損失", "償却債権取立益"],
+  // 固定資産
+  ["建物", "備品", "車両運搬具", "機械装置", "土地", "建設仮勘定"],
+  // 減価償却
+  ["減価償却費", "建物減価償却累計額", "備品減価償却累計額", "車両運搬具減価償却累計額", "機械装置減価償却累計額"],
+  // 固定資産売却損益
+  ["固定資産売却益", "固定資産売却損", "固定資産圧縮損"],
+  // 有価証券の種類
+  ["売買目的有価証券", "満期保有目的債券", "その他有価証券", "子会社株式", "関連会社株式"],
+  // 有価証券損益
+  ["有価証券売却益", "有価証券売却損", "有価証券評価益", "有価証券評価損", "有価証券利息"],
+  // 社債関連
+  ["社債", "社債発行費", "長期借入金", "短期借入金", "支払利息"],
+  // 発行費系
+  ["社債発行費", "株式交付費", "支払手数料"],
+  // 純資産（株主資本）
+  ["資本金", "資本準備金", "その他資本剰余金", "利益準備金", "別途積立金", "繰越利益剰余金", "自己株式"],
+  // 配当関連
+  ["未払配当金", "未払金", "未払費用", "繰越利益剰余金"],
+  // 利息
+  ["受取利息", "支払利息", "受取配当金", "有価証券利息"],
+  // 未収入金 ⇔ 未払金
+  ["未収入金", "未払金", "未収収益", "未払費用"],
+  // 仮勘定
+  ["仮払金", "仮受金", "仮払法人税等", "仮払消費税", "仮受消費税"],
+  // 発送費・運賃系
+  ["発送費", "通信費", "旅費交通費", "消耗品費", "広告宣伝費"],
+  // 引当金系
+  ["賞与引当金", "修繕引当金", "退職給付引当金", "商品保証引当金", "貸倒引当金"],
+  // 工業簿記
+  ["材料", "賃金", "賃金・給料", "仕掛品", "製品", "製造間接費"],
+  // のれん
+  ["のれん", "のれん償却", "負ののれん発生益"],
+  // 法人税等
+  ["法人税等", "法人税、住民税及び事業税", "仮払法人税等", "未払法人税等"],
+  // 棚卸関連
+  ["商品", "繰越商品", "棚卸減耗損", "商品評価損"],
+];
+
+
+// ================================================================
+// 問題プール
+// ================================================================
+const questionBank = {
+
+  // ============================================================
+  // 第1問: 仕訳問題（1問4点 × 5問 = 20点）
+  // answers配列: side="debit"(借方) / "credit"(貸方)
+  // 採点は順不同マッチング（部分点なし、全一致で4点）
+  // ============================================================
+  q1_journal: [
+    {
+      id: "q1-001",
+      text: "商品￥200,000を掛けで売り上げた。",
+      explanation: "【解説】商品を売り上げ代金を掛けとした場合、売上の増加（収益の発生）として貸方に「売上」、売掛金の増加（資産の増加）として借方に「売掛金」を計上します。",
+      answers: [
+        { side: "debit", account: "売掛金", amount: 200000 },
+        { side: "credit", account: "売上", amount: 200000 }
+      ]
+    },
+    {
+      id: "q1-002",
+      text: "商品￥150,000を掛けで仕入れた。",
+      explanation: "【解説】商品を仕入れ代金を掛けとした場合、仕入の増加（費用の発生）として借方に「仕入」、買掛金の増加（負債の増加）として貸方に「買掛金」を計上します。",
+      answers: [
+        { side: "debit", account: "仕入", amount: 150000 },
+        { side: "credit", account: "買掛金", amount: 150000 }
+      ]
+    },
+    {
+      id: "q1-003",
+      text: "買掛金￥100,000を当座預金から支払った。",
+      explanation: "【解説】買掛金を当座預金から支払った場合、買掛金の減少（負債の減少）として借方に「買掛金」、当座預金の減少（資産の減少）として貸方に「当座預金」を計上します。",
+      answers: [
+        { side: "debit", account: "買掛金", amount: 100000 },
+        { side: "credit", account: "当座預金", amount: 100000 }
+      ]
+    },
+    {
+      id: "q1-004",
+      text: "売掛金￥300,000が普通預金口座に振り込まれた。",
+      explanation: "【解説】売掛金の回収により普通預金の増加（資産の増加）として借方に「普通預金」、売掛金の減少（資産の減少）として貸方に「売掛金」を計上します。",
+      answers: [
+        { side: "debit", account: "普通預金", amount: 300000 },
+        { side: "credit", account: "売掛金", amount: 300000 }
+      ]
+    },
+    {
+      id: "q1-005",
+      text: "備品￥500,000を購入し、代金は月末に支払うこととした。",
+      explanation: "【解説】商品以外の資産（備品）を購入した後払い代金は、買掛金ではなく「未払金」（負債の増加）で処理します。",
+      answers: [
+        { side: "debit", account: "備品", amount: 500000 },
+        { side: "credit", account: "未払金", amount: 500000 }
+      ]
+    },
+    {
+      id: "q1-006",
+      text: "売買目的で保有していたA社株式（帳簿価額￥180,000）を￥200,000で売却し、代金は当座預金に振り込まれた。",
+      explanation: "【解説】売買目的有価証券の売却額￥200,000と帳簿価額￥180,000の差額￥20,000は「有価証券売却益」（収益の発生）として計上します。",
+      answers: [
+        { side: "debit", account: "当座預金", amount: 200000 },
+        { side: "credit", account: "売買目的有価証券", amount: 180000 },
+        { side: "credit", account: "有価証券売却益", amount: 20000 }
+      ]
+    },
+    {
+      id: "q1-007",
+      text: "建物（取得原価￥2,000,000、減価償却累計額￥800,000）を￥1,100,000で売却し、代金は月末に受け取ることとした。",
+      explanation: "【解説】建物の帳簿価額は 2,000,000 - 800,000 = 1,200,000円。これを 1,100,000円で売却したため、差額 100,000円は「固定資産売却損」（費用の発生）となります。また後払い代金は「未収入金」です。",
+      answers: [
+        { side: "debit", account: "未収入金", amount: 1100000 },
+        { side: "debit", account: "建物減価償却累計額", amount: 800000 },
+        { side: "credit", account: "建物", amount: 2000000 },
+        { side: "debit", account: "固定資産売却損", amount: 100000 }
+      ]
+    },
+    {
+      id: "q1-008",
+      text: "決算にあたり、売掛金の期末残高￥600,000に対して2%の貸倒引当金を差額補充法により設定する。なお、貸倒引当金の残高は￥5,000である。",
+      explanation: "【解説】設定必要額は 600,000 × 2% = 12,000円。既存残高が 5,000円あるため、差額の 7,000円を「貸倒引当金繰入」として補充計上します。",
+      answers: [
+        { side: "debit", account: "貸倒引当金繰入", amount: 7000 },
+        { side: "credit", account: "貸倒引当金", amount: 7000 }
+      ]
+    },
+    {
+      id: "q1-009",
+      text: "得意先が倒産し、前期に発生した売掛金￥250,000が回収不能となった。なお、貸倒引当金の残高は￥200,000である。",
+      explanation: "【解説】前期発生の売掛金の貸倒れは、まず貸倒引当金を取り崩し（200,000円）、不足する 50,000円を「貸倒損失」として計上します。",
+      answers: [
+        { side: "debit", account: "貸倒引当金", amount: 200000 },
+        { side: "debit", account: "貸倒損失", amount: 50000 },
+        { side: "credit", account: "売掛金", amount: 250000 }
+      ]
+    },
+    {
+      id: "q1-010",
+      text: "社債（額面総額￥1,000,000、年利率3%、利払日は3月末と9月末）を額面￥100につき￥98で発行し、払込金は当座預金とした。なお、社債発行費は発行時に全額費用処理する方法を採用しており、社債発行費￥20,000は現金で支払った。",
+      explanation: "【解説】社債の発行金額は 1,000,000 × (98/100) = 980,000円。社債発行費 20,000円は新株発行等と同様に全額費用として「社債発行費」勘定で処理します。",
+      answers: [
+        { side: "debit", account: "当座預金", amount: 980000 },
+        { side: "debit", account: "社債発行費", amount: 20000 },
+        { side: "credit", account: "社債", amount: 1000000 }
+      ]
+    },
+    {
+      id: "q1-011",
+      text: "株主総会において、繰越利益剰余金を次のとおり処分することが決議された。利益準備金の積立額￥30,000、別途積立金の積立額￥200,000、配当金￥300,000。",
+      explanation: "【解説】繰越利益剰余金の減少を借方に計上し、それぞれ「利益準備金」「別途積立金」、未払いの配当金は「未払配当金」（負債）に計上します。",
+      answers: [
+        { side: "debit", account: "繰越利益剰余金", amount: 530000 },
+        { side: "credit", account: "利益準備金", amount: 30000 },
+        { side: "credit", account: "別途積立金", amount: 200000 },
+        { side: "credit", account: "未払配当金", amount: 300000 }
+      ]
+    },
+    {
+      id: "q1-012",
+      text: "商品￥400,000を売り上げ、代金のうち￥100,000は現金で受け取り、残額は掛けとした。なお、発送費￥8,000を現金で支払った。",
+      explanation: "【解説】当社負担の発送費は「発送費」（費用）として計上します。売上 400,000円と発送費 8,000円をそれぞれ適切に仕訳します。",
+      answers: [
+        { side: "debit", account: "現金", amount: 100000 },
+        { side: "debit", account: "売掛金", amount: 300000 },
+        { side: "debit", account: "発送費", amount: 8000 },
+        { side: "credit", account: "売上", amount: 400000 },
+        { side: "credit", account: "現金", amount: 8000 }
+      ]
+    },
+    {
+      id: "q1-013",
+      text: "電子記録債権￥350,000が決済され、当座預金口座に振り込まれた。",
+      explanation: "【解説】電子記録債権の決済により、資産の減少として貸方に「電子記録債権」、当座預金の増加として借方に「当座預金」を計上します。",
+      answers: [
+        { side: "debit", account: "当座預金", amount: 350000 },
+        { side: "credit", account: "電子記録債権", amount: 350000 }
+      ]
+    },
+    {
+      id: "q1-014",
+      text: "仕入先に対する買掛金￥500,000について、電子記録債務を発生させた。",
+      explanation: "【解説】買買金の代わりに電子記録債務を発生させたため、買掛金の減少（負債の減少）を借方に、電子記録債務の増加（負債の増加）を貸方に計上します。",
+      answers: [
+        { side: "debit", account: "買掛金", amount: 500000 },
+        { side: "credit", account: "電子記録債務", amount: 500000 }
+      ]
+    },
+    {
+      id: "q1-015",
+      text: "決算にあたり、保険料の前払分￥24,000を計上する。",
+      explanation: "【解説】当期に支払った保険料のうち翌期以降の分は「前払費用」（資産の増加）に振替え、支払保険料（費用の発生）を減額させます。",
+      answers: [
+        { side: "debit", account: "前払費用", amount: 24000 },
+        { side: "credit", account: "保険料", amount: 24000 }
+      ]
+    }
+  ],
+
+  // ============================================================
+  // 第2問: 商業簿記 個別問題（20点）
+  // contentHTML内の {{blank:id}} → <input> or <select> に置換
+  // answerForm各blankのpoints合計 = 20
+  // ============================================================
+  q2_commercial: [
+    {
+      id: "q2-001",
+      title: "次の資料に基づき、株主資本等変動計算書の空欄を埋めなさい。",
+      explanation: "【解説】新株発行時は払込金の1/2を超えない額を資本準備金に計上できます。剰余金の配当・処分では利益準備金と別途積立金の計上および繰越利益剰余金の減少を正しく反映させます。",
+      contentHTML: `
+        <p>当期（×2年4月1日〜×3年3月31日）における以下の取引に基づき、株主資本等変動計算書の空欄を埋めなさい。</p>
+        <p><strong>【資料】当期中の取引</strong></p>
+        <ul style="margin: 10px 0 10px 20px; font-size: 0.88rem;">
+          <li>増資を行い、新株200株を1株あたり￥3,000で発行し、全額の払込みを受け、払込金は当座預金とした。なお、資本金には会社法が定める最低額を組み入れた。</li>
+          <li>株主総会において、繰越利益剰余金を次のとおり配当・処分した。配当金￥100,000、利益準備金の積立て￥10,000、別途積立金の積立て￥50,000。</li>
+          <li>当期純利益は￥280,000であった。</li>
+        </ul>
+        <p><strong>株主資本等変動計算書（一部）</strong></p>
+        <table>
+          <thead>
+            <tr>
+              <th class="text-left" style="text-align:left">項目</th>
+              <th>資本金</th>
+              <th>資本準備金</th>
+              <th>利益準備金</th>
+              <th>別途積立金</th>
+              <th>繰越利益剰余金</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" style="text-align:left">当期首残高</td>
+              <td>1,000,000</td>
+              <td>200,000</td>
+              <td>80,000</td>
+              <td>300,000</td>
+              <td>250,000</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left">新株の発行</td>
+              <td>{{blank:ans-q2-1-1}}</td>
+              <td>{{blank:ans-q2-1-2}}</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left">剰余金の配当</td>
+              <td>—</td>
+              <td>—</td>
+              <td>{{blank:ans-q2-1-3}}</td>
+              <td>—</td>
+              <td>{{blank:ans-q2-1-4}}</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left">別途積立金の積立て</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+              <td>{{blank:ans-q2-1-5}}</td>
+              <td>{{blank:ans-q2-1-6}}</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left">当期純利益</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+              <td>{{blank:ans-q2-1-7}}</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left"><strong>当期末残高</strong></td>
+              <td><strong>{{blank:ans-q2-1-8}}</strong></td>
+              <td><strong>{{blank:ans-q2-1-9}}</strong></td>
+              <td><strong>{{blank:ans-q2-1-10}}</strong></td>
+              <td><strong>{{blank:ans-q2-1-11}}</strong></td>
+              <td><strong>{{blank:ans-q2-1-12}}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      `,
+      answerForm: [
+        { id: "ans-q2-1-1", type: "number", correctAnswer: 300000, points: 2 },
+        { id: "ans-q2-1-2", type: "number", correctAnswer: 300000, points: 2 },
+        { id: "ans-q2-1-3", type: "number", correctAnswer: 10000, points: 2 },
+        { id: "ans-q2-1-4", type: "number", correctAnswer: -100000, points: 2 },
+        { id: "ans-q2-1-5", type: "number", correctAnswer: 50000, points: 1 },
+        { id: "ans-q2-1-6", type: "number", correctAnswer: -50000, points: 1 },
+        { id: "ans-q2-1-7", type: "number", correctAnswer: 280000, points: 2 },
+        { id: "ans-q2-1-8", type: "number", correctAnswer: 1300000, points: 2 },
+        { id: "ans-q2-1-9", type: "number", correctAnswer: 500000, points: 2 },
+        { id: "ans-q2-1-10", type: "number", correctAnswer: 90000, points: 1 },
+        { id: "ans-q2-1-11", type: "number", correctAnswer: 350000, points: 1 },
+        { id: "ans-q2-1-12", type: "number", correctAnswer: 380000, points: 2 }
+      ]
+    },
+    {
+      id: "q2-002",
+      title: "次の資料に基づき、固定資産台帳の空欄を埋めなさい。",
+      contentHTML: `
+        <p>以下の資料に基づき、備品Aに関する固定資産台帳の空欄を埋めなさい。</p>
+        <p><strong>【資料】</strong></p>
+        <ul style="margin: 10px 0 10px 20px; font-size: 0.88rem;">
+          <li>備品A: 取得日 ×1年4月1日、取得原価 ￥600,000</li>
+          <li>耐用年数: 5年、残存価額: ゼロ、償却方法: 定額法</li>
+          <li>決算日: 3月31日（年1回）</li>
+          <li>×3年9月30日に￥320,000で売却し、代金は月末に受け取る。</li>
+        </ul>
+        <p><strong>固定資産台帳（備品A）</strong></p>
+        <table>
+          <thead>
+            <tr>
+              <th class="text-left" style="text-align:left">項目</th>
+              <th>金額（円）</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="text-left" style="text-align:left">取得原価</td><td>600,000</td></tr>
+            <tr><td class="text-left" style="text-align:left">×2年3月期 減価償却費</td><td>{{blank:ans-q2-2-1}}</td></tr>
+            <tr><td class="text-left" style="text-align:left">×2年3月期末 減価償却累計額</td><td>{{blank:ans-q2-2-2}}</td></tr>
+            <tr><td class="text-left" style="text-align:left">×3年3月期 減価償却費</td><td>{{blank:ans-q2-2-3}}</td></tr>
+            <tr><td class="text-left" style="text-align:left">×3年3月期末 減価償却累計額</td><td>{{blank:ans-q2-2-4}}</td></tr>
+            <tr><td class="text-left" style="text-align:left">×3年9月売却時 減価償却費（月割）</td><td>{{blank:ans-q2-2-5}}</td></tr>
+            <tr><td class="text-left" style="text-align:left">売却時 減価償却累計額合計</td><td>{{blank:ans-q2-2-6}}</td></tr>
+            <tr><td class="text-left" style="text-align:left">売却時 帳簿価額</td><td>{{blank:ans-q2-2-7}}</td></tr>
+            <tr><td class="text-left" style="text-align:left">売却価額</td><td>320,000</td></tr>
+            <tr><td class="text-left" style="text-align:left">固定資産売却損益（＋益/−損）</td><td>{{blank:ans-q2-2-8}}</td></tr>
+          </tbody>
+        </table>
+      `,
+      answerForm: [
+        { id: "ans-q2-2-1", type: "number", correctAnswer: 120000, points: 2 },
+        { id: "ans-q2-2-2", type: "number", correctAnswer: 120000, points: 2 },
+        { id: "ans-q2-2-3", type: "number", correctAnswer: 120000, points: 2 },
+        { id: "ans-q2-2-4", type: "number", correctAnswer: 240000, points: 3 },
+        { id: "ans-q2-2-5", type: "number", correctAnswer: 60000, points: 3 },
+        { id: "ans-q2-2-6", type: "number", correctAnswer: 300000, points: 3 },
+        { id: "ans-q2-2-7", type: "number", correctAnswer: 300000, points: 3 },
+        { id: "ans-q2-2-8", type: "number", correctAnswer: 20000, points: 2 }
+      ]
+    }
+  ],
+
+  // ============================================================
+  // 第3問: 商業簿記 決算問題（20点）
+  // ============================================================
+  q3_commercial_closing: [
+    {
+      id: "q3-001",
+      title: "次の決算整理事項に基づき、精算表の修正記入欄および損益計算書欄・貸借対照表欄の空欄を埋めなさい。",
+      contentHTML: `
+        <p>×2年3月31日の決算において、以下の決算整理事項を処理し、精算表の空欄を埋めなさい。</p>
+        <p><strong>【残高試算表（一部）】</strong></p>
+        <table>
+          <thead>
+            <tr><th class="text-left" style="text-align:left">勘定科目</th><th>借方</th><th>貸方</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="text-left" style="text-align:left">売掛金</td><td>500,000</td><td></td></tr>
+            <tr><td class="text-left" style="text-align:left">貸倒引当金</td><td></td><td>3,000</td></tr>
+            <tr><td class="text-left" style="text-align:left">備品</td><td>800,000</td><td></td></tr>
+            <tr><td class="text-left" style="text-align:left">備品減価償却累計額</td><td></td><td>160,000</td></tr>
+            <tr><td class="text-left" style="text-align:left">前払保険料</td><td>36,000</td><td></td></tr>
+            <tr><td class="text-left" style="text-align:left">売上</td><td></td><td>2,000,000</td></tr>
+            <tr><td class="text-left" style="text-align:left">仕入</td><td>1,200,000</td><td></td></tr>
+            <tr><td class="text-left" style="text-align:left">保険料</td><td>48,000</td><td></td></tr>
+          </tbody>
+        </table>
+        <p><strong>【決算整理事項】</strong></p>
+        <ol style="margin: 10px 0 10px 20px; font-size: 0.88rem;">
+          <li>売掛金の期末残高に対して2%の貸倒引当金を差額補充法で設定する。</li>
+          <li>備品について定額法で減価償却を行う（耐用年数5年、残存価額ゼロ）。</li>
+          <li>保険料のうち翌期分￥24,000を前払計上する（前払保険料の期首残高￥36,000は期中に適切に処理済み）。</li>
+        </ol>
+        <p><strong>【精算表（空欄を埋めなさい）】</strong></p>
+        <table>
+          <thead>
+            <tr>
+              <th class="text-left" style="text-align:left">勘定科目</th>
+              <th colspan="2">修正記入</th>
+              <th>損益計算書<br>または貸借対照表</th>
+            </tr>
+            <tr>
+              <th></th>
+              <th>借方</th>
+              <th>貸方</th>
+              <th>金額</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" style="text-align:left">貸倒引当金繰入</td>
+              <td>{{blank:ans-q3-1-1}}</td>
+              <td>—</td>
+              <td>（損益）{{blank:ans-q3-1-2}}</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left">貸倒引当金</td>
+              <td>—</td>
+              <td>{{blank:ans-q3-1-3}}</td>
+              <td>（B/S）{{blank:ans-q3-1-4}}</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left">減価償却費</td>
+              <td>{{blank:ans-q3-1-5}}</td>
+              <td>—</td>
+              <td>（損益）{{blank:ans-q3-1-6}}</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left">備品減価償却累計額</td>
+              <td>—</td>
+              <td>{{blank:ans-q3-1-7}}</td>
+              <td>（B/S）{{blank:ans-q3-1-8}}</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left">前払保険料</td>
+              <td>{{blank:ans-q3-1-9}}</td>
+              <td>—</td>
+              <td>（B/S）{{blank:ans-q3-1-10}}</td>
+            </tr>
+          </tbody>
+        </table>
+      `,
+      answerForm: [
+        { id: "ans-q3-1-1", type: "number", correctAnswer: 7000, points: 2 },
+        { id: "ans-q3-1-2", type: "number", correctAnswer: 7000, points: 2 },
+        { id: "ans-q3-1-3", type: "number", correctAnswer: 7000, points: 2 },
+        { id: "ans-q3-1-4", type: "number", correctAnswer: 10000, points: 2 },
+        { id: "ans-q3-1-5", type: "number", correctAnswer: 160000, points: 2 },
+        { id: "ans-q3-1-6", type: "number", correctAnswer: 160000, points: 2 },
+        { id: "ans-q3-1-7", type: "number", correctAnswer: 160000, points: 2 },
+        { id: "ans-q3-1-8", type: "number", correctAnswer: 320000, points: 2 },
+        { id: "ans-q3-1-9", type: "number", correctAnswer: 24000, points: 2 },
+        { id: "ans-q3-1-10", type: "number", correctAnswer: 24000, points: 2 }
+      ]
+    },
+    {
+      id: "q3-002",
+      title: "次の決算整理事項に基づき、損益計算書および貸借対照表の空欄を埋めなさい。",
+      contentHTML: `
+        <p>×3年3月31日の決算において、以下の決算整理前残高試算表と決算整理事項に基づき、各空欄を埋めなさい。</p>
+        <p><strong>【決算整理前残高試算表（一部）】</strong></p>
+        <table>
+          <thead><tr><th class="text-left" style="text-align:left">勘定科目</th><th>借方</th><th>貸方</th></tr></thead>
+          <tbody>
+            <tr><td class="text-left" style="text-align:left">売上</td><td></td><td>3,500,000</td></tr>
+            <tr><td class="text-left" style="text-align:left">仕入</td><td>2,100,000</td><td></td></tr>
+            <tr><td class="text-left" style="text-align:left">繰越商品</td><td>180,000</td><td></td></tr>
+            <tr><td class="text-left" style="text-align:left">給料</td><td>400,000</td><td></td></tr>
+            <tr><td class="text-left" style="text-align:left">支払家賃</td><td>360,000</td><td></td></tr>
+          </tbody>
+        </table>
+        <p><strong>【決算整理事項】</strong></p>
+        <ol style="margin: 10px 0 10px 20px; font-size: 0.88rem;">
+          <li>期末商品棚卸高は￥220,000である。売上原価は「仕入」の行で算定する。</li>
+          <li>給料の未払分が￥35,000ある。</li>
+          <li>支払家賃のうち￥30,000は翌期分である。</li>
+        </ol>
+        <p><strong>【解答欄】</strong></p>
+        <table>
+          <thead><tr><th class="text-left" style="text-align:left">項目</th><th>金額</th></tr></thead>
+          <tbody>
+            <tr><td class="text-left" style="text-align:left">売上原価</td><td>{{blank:ans-q3-2-1}}</td></tr>
+            <tr><td class="text-left" style="text-align:left">売上総利益</td><td>{{blank:ans-q3-2-2}}</td></tr>
+            <tr><td class="text-left" style="text-align:left">給料（損益計算書）</td><td>{{blank:ans-q3-2-3}}</td></tr>
+            <tr><td class="text-left" style="text-align:left">支払家賃（損益計算書）</td><td>{{blank:ans-q3-2-4}}</td></tr>
+            <tr><td class="text-left" style="text-align:left">未払費用（貸借対照表）</td><td>{{blank:ans-q3-2-5}}</td></tr>
+            <tr><td class="text-left" style="text-align:left">前払費用（貸借対照表）</td><td>{{blank:ans-q3-2-6}}</td></tr>
+            <tr><td class="text-left" style="text-align:left">繰越商品（貸借対照表）</td><td>{{blank:ans-q3-2-7}}</td></tr>
+          </tbody>
+        </table>
+      `,
+      answerForm: [
+        { id: "ans-q3-2-1", type: "number", correctAnswer: 2060000, points: 4 },
+        { id: "ans-q3-2-2", type: "number", correctAnswer: 1440000, points: 4 },
+        { id: "ans-q3-2-3", type: "number", correctAnswer: 435000, points: 2 },
+        { id: "ans-q3-2-4", type: "number", correctAnswer: 330000, points: 2 },
+        { id: "ans-q3-2-5", type: "number", correctAnswer: 35000, points: 3 },
+        { id: "ans-q3-2-6", type: "number", correctAnswer: 30000, points: 3 },
+        { id: "ans-q3-2-7", type: "number", correctAnswer: 220000, points: 2 }
+      ]
+    }
+  ],
+
+  // ============================================================
+  // 第4問: 工業簿記 仕訳/個別問題（合計20点）
+  // pointsフィールドで各問題の配点を指定
+  // 抽出ロジックで合計20点になる組み合わせを選ぶ
+  // ============================================================
+  q4_industrial: [
+    {
+      id: "q4-001",
+      title: "次の取引について仕訳しなさい（工業簿記の勘定体系による）。",
+      points: 20,
+      contentHTML: `
+        <p>以下の取引について、工業簿記の勘定体系により仕訳しなさい。各設問の解答欄に勘定科目と金額を記入すること。</p>
+        <p><strong>(1)</strong> 材料￥300,000を掛けで購入した。</p>
+        <table class="journal-entry-table">
+          <thead><tr><th></th><th>借方科目</th><th>金額</th><th>貸方科目</th><th>金額</th></tr></thead>
+          <tbody><tr>
+            <td class="side-label">1</td>
+            <td>{{blank:ans-q4-1-1a}}</td>
+            <td>{{blank:ans-q4-1-1b}}</td>
+            <td>{{blank:ans-q4-1-1c}}</td>
+            <td>{{blank:ans-q4-1-1d}}</td>
+          </tr></tbody>
+        </table>
+        <p><strong>(2)</strong> 材料￥250,000を消費した。うち直接材料費は￥200,000、間接材料費は￥50,000である。</p>
+        <table class="journal-entry-table">
+          <thead><tr><th></th><th>借方科目</th><th>金額</th><th>貸方科目</th><th>金額</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="side-label">1</td>
+              <td>{{blank:ans-q4-1-2a}}</td>
+              <td>{{blank:ans-q4-1-2b}}</td>
+              <td rowspan="2">{{blank:ans-q4-1-2e}}</td>
+              <td rowspan="2">{{blank:ans-q4-1-2f}}</td>
+            </tr>
+            <tr>
+              <td class="side-label">2</td>
+              <td>{{blank:ans-q4-1-2c}}</td>
+              <td>{{blank:ans-q4-1-2d}}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p><strong>(3)</strong> 賃金￥400,000を当座預金から支払った。</p>
+        <table class="journal-entry-table">
+          <thead><tr><th></th><th>借方科目</th><th>金額</th><th>貸方科目</th><th>金額</th></tr></thead>
+          <tbody><tr>
+            <td class="side-label">1</td>
+            <td>{{blank:ans-q4-1-3a}}</td>
+            <td>{{blank:ans-q4-1-3b}}</td>
+            <td>{{blank:ans-q4-1-3c}}</td>
+            <td>{{blank:ans-q4-1-3d}}</td>
+          </tr></tbody>
+        </table>
+        <p><strong>(4)</strong> 賃金￥400,000を消費した。うち直接労務費は￥320,000、間接労務費は￥80,000である。</p>
+        <table class="journal-entry-table">
+          <thead><tr><th></th><th>借方科目</th><th>金額</th><th>貸方科目</th><th>金額</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="side-label">1</td>
+              <td>{{blank:ans-q4-1-4a}}</td>
+              <td>{{blank:ans-q4-1-4b}}</td>
+              <td rowspan="2">{{blank:ans-q4-1-4e}}</td>
+              <td rowspan="2">{{blank:ans-q4-1-4f}}</td>
+            </tr>
+            <tr>
+              <td class="side-label">2</td>
+              <td>{{blank:ans-q4-1-4c}}</td>
+              <td>{{blank:ans-q4-1-4d}}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p><strong>(5)</strong> 製造間接費￥130,000（間接材料費￥50,000＋間接労務費￥80,000）を予定配賦率@￥500、直接作業時間280時間で仕掛品に配賦した。</p>
+        <table class="journal-entry-table">
+          <thead><tr><th></th><th>借方科目</th><th>金額</th><th>貸方科目</th><th>金額</th></tr></thead>
+          <tbody><tr>
+            <td class="side-label">1</td>
+            <td>{{blank:ans-q4-1-5a}}</td>
+            <td>{{blank:ans-q4-1-5b}}</td>
+            <td>{{blank:ans-q4-1-5c}}</td>
+            <td>{{blank:ans-q4-1-5d}}</td>
+          </tr></tbody>
+        </table>
+      `,
+      answerForm: [
+        // (1) 材料購入
+        { id: "ans-q4-1-1a", type: "select", options: accountList, correctAnswer: "材料", points: 1 },
+        { id: "ans-q4-1-1b", type: "number", correctAnswer: 300000, points: 1 },
+        { id: "ans-q4-1-1c", type: "select", options: accountList, correctAnswer: "買掛金", points: 1 },
+        { id: "ans-q4-1-1d", type: "number", correctAnswer: 300000, points: 1 },
+        // (2) 材料消費
+        { id: "ans-q4-1-2a", type: "select", options: accountList, correctAnswer: "仕掛品", points: 1 },
+        { id: "ans-q4-1-2b", type: "number", correctAnswer: 200000, points: 1 },
+        { id: "ans-q4-1-2c", type: "select", options: accountList, correctAnswer: "製造間接費", points: 1 },
+        { id: "ans-q4-1-2d", type: "number", correctAnswer: 50000, points: 1 },
+        { id: "ans-q4-1-2e", type: "select", options: accountList, correctAnswer: "材料", points: 1 },
+        { id: "ans-q4-1-2f", type: "number", correctAnswer: 250000, points: 1 },
+        // (3) 賃金支払
+        { id: "ans-q4-1-3a", type: "select", options: accountList, correctAnswer: "賃金", points: 1 },
+        { id: "ans-q4-1-3b", type: "number", correctAnswer: 400000, points: 1 },
+        { id: "ans-q4-1-3c", type: "select", options: accountList, correctAnswer: "当座預金", points: 1 },
+        { id: "ans-q4-1-3d", type: "number", correctAnswer: 400000, points: 1 },
+        // (4) 賃金消費
+        { id: "ans-q4-1-4a", type: "select", options: accountList, correctAnswer: "仕掛品", points: 1 },
+        { id: "ans-q4-1-4b", type: "number", correctAnswer: 320000, points: 1 },
+        { id: "ans-q4-1-4c", type: "select", options: accountList, correctAnswer: "製造間接費", points: 1 },
+        { id: "ans-q4-1-4d", type: "number", correctAnswer: 80000, points: 1 },
+        { id: "ans-q4-1-4e", type: "select", options: accountList, correctAnswer: "賃金", points: 0 },
+        { id: "ans-q4-1-4f", type: "number", correctAnswer: 400000, points: 0 },
+        // (5) 製造間接費配賦
+        { id: "ans-q4-1-5a", type: "select", options: accountList, correctAnswer: "仕掛品", points: 1 },
+        { id: "ans-q4-1-5b", type: "number", correctAnswer: 140000, points: 1 },
+        { id: "ans-q4-1-5c", type: "select", options: accountList, correctAnswer: "製造間接費", points: 1 },
+        { id: "ans-q4-1-5d", type: "number", correctAnswer: 140000, points: 1 }
+      ]
+    },
+    {
+      id: "q4-010",
+      title: "次の資料に基づき、個別原価計算における製造指図書別の原価を計算しなさい。",
+      points: 20,
+      contentHTML: `
+        <p>当月の製造指図書別の原価データは以下のとおりである。製造間接費は直接作業時間を基準に予定配賦する（予定配賦率: @￥600/時間）。</p>
+        <p><strong>【資料】</strong></p>
+        <table>
+          <thead>
+            <tr>
+              <th class="text-left" style="text-align:left">項目</th>
+              <th>指図書#101<br>（月初仕掛）</th>
+              <th>指図書#102<br>（当月着手）</th>
+              <th>指図書#103<br>（当月着手）</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="text-left" style="text-align:left">月初仕掛品原価</td><td>85,000</td><td>—</td><td>—</td></tr>
+            <tr><td class="text-left" style="text-align:left">直接材料費</td><td>120,000</td><td>200,000</td><td>150,000</td></tr>
+            <tr><td class="text-left" style="text-align:left">直接労務費</td><td>90,000</td><td>160,000</td><td>100,000</td></tr>
+            <tr><td class="text-left" style="text-align:left">直接作業時間</td><td>150h</td><td>250h</td><td>200h</td></tr>
+          </tbody>
+        </table>
+        <p>指図書#101と#102は当月完成、#103は月末仕掛中である。</p>
+        <p><strong>【解答欄】</strong></p>
+        <table>
+          <thead>
+            <tr>
+              <th class="text-left" style="text-align:left">項目</th>
+              <th>指図書#101</th>
+              <th>指図書#102</th>
+              <th>指図書#103</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" style="text-align:left">製造間接費配賦額</td>
+              <td>{{blank:ans-q4-2-1}}</td>
+              <td>{{blank:ans-q4-2-2}}</td>
+              <td>{{blank:ans-q4-2-3}}</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left">製造原価合計</td>
+              <td>{{blank:ans-q4-2-4}}</td>
+              <td>{{blank:ans-q4-2-5}}</td>
+              <td>{{blank:ans-q4-2-6}}</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left">完成品原価合計</td>
+              <td colspan="3">{{blank:ans-q4-2-7}}</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left">月末仕掛品原価</td>
+              <td colspan="3">{{blank:ans-q4-2-8}}</td>
+            </tr>
+          </tbody>
+        </table>
+      `,
+      answerForm: [
+        { id: "ans-q4-2-1", type: "number", correctAnswer: 90000, points: 2 },
+        { id: "ans-q4-2-2", type: "number", correctAnswer: 150000, points: 2 },
+        { id: "ans-q4-2-3", type: "number", correctAnswer: 120000, points: 2 },
+        { id: "ans-q4-2-4", type: "number", correctAnswer: 385000, points: 3 },
+        { id: "ans-q4-2-5", type: "number", correctAnswer: 510000, points: 3 },
+        { id: "ans-q4-2-6", type: "number", correctAnswer: 370000, points: 3 },
+        { id: "ans-q4-2-7", type: "number", correctAnswer: 895000, points: 3 },
+        { id: "ans-q4-2-8", type: "number", correctAnswer: 370000, points: 2 }
+      ]
+    }
+  ],
+
+  // ============================================================
+  // 第5問: 工業簿記 総合原価計算等（20点）
+  // ============================================================
+  q5_industrial: [
+    {
+      id: "q5-001",
+      title: "次の資料に基づき、単純総合原価計算（先入先出法）により、完成品原価と月末仕掛品原価を計算しなさい。",
+      contentHTML: `
+        <p>当月の生産データおよび原価データは以下のとおりである。月末仕掛品の評価は先入先出法による。</p>
+        <p><strong>【生産データ】</strong></p>
+        <table>
+          <thead><tr><th class="text-left" style="text-align:left">項目</th><th>数量</th></tr></thead>
+          <tbody>
+            <tr><td class="text-left" style="text-align:left">月初仕掛品</td><td>200個（加工進捗度50%）</td></tr>
+            <tr><td class="text-left" style="text-align:left">当月投入</td><td>800個</td></tr>
+            <tr><td class="text-left" style="text-align:left">合計</td><td>1,000個</td></tr>
+            <tr><td class="text-left" style="text-align:left">月末仕掛品</td><td>100個（加工進捗度40%）</td></tr>
+            <tr><td class="text-left" style="text-align:left">完成品</td><td>900個</td></tr>
+          </tbody>
+        </table>
+        <p>※ 材料はすべて工程の始点で投入する。完成品単位原価は円未満を四捨五入すること。</p>
+        <p><strong>【原価データ】</strong></p>
+        <table>
+          <thead><tr><th class="text-left" style="text-align:left">項目</th><th>直接材料費</th><th>加工費</th></tr></thead>
+          <tbody>
+            <tr><td class="text-left" style="text-align:left">月初仕掛品原価</td><td>￥60,000</td><td>￥45,000</td></tr>
+            <tr><td class="text-left" style="text-align:left">当月製造費用</td><td>￥240,000</td><td>￥336,000</td></tr>
+          </tbody>
+        </table>
+        <p><strong>【解答欄】</strong></p>
+        <table>
+          <thead><tr><th class="text-left" style="text-align:left">項目</th><th>直接材料費</th><th>加工費</th><th>合計</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="text-left" style="text-align:left">月末仕掛品原価</td>
+              <td>{{blank:ans-q5-1-1}}</td>
+              <td>{{blank:ans-q5-1-2}}</td>
+              <td>{{blank:ans-q5-1-3}}</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left">完成品原価</td>
+              <td>{{blank:ans-q5-1-4}}</td>
+              <td>{{blank:ans-q5-1-5}}</td>
+              <td>{{blank:ans-q5-1-6}}</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left">完成品単位原価</td>
+              <td colspan="2">—</td>
+              <td>{{blank:ans-q5-1-7}}</td>
+            </tr>
+          </tbody>
+        </table>
+      `,
+      answerForm: [
+        // 先入先出法:
+        // 材料: 当月投入800個のうち月末100個 → 月末材料費 = 240,000 × 100/800 = 30,000
+        // 加工: 当月加工換算 = 完成900 - 月初換算100 + 月末換算40 = 840 → 月末加工費 = 333,200 × 40/840 ≒ 15,867 → 端数処理で15,867
+        // ただし計算を簡便にするため:
+        // 加工費当月換算量 = 900 - 200*0.5 + 100*0.4 = 900 - 100 + 40 = 840
+        // 月末加工費 = 333,200 * 40 / 840 = 15,866.666... → 四捨五入で調整
+        // ここでは割り切れる数値に修正:
+        // 加工費当月投入 = 333,200、換算量840、月末40個分 = 333,200 × 40/840 = 15,866.67
+        // 簿記試験では割り切れるように出題されるので、加工費を修正
+        // 加工費当月: 336,000 → 336,000 × 40/840 = 16,000
+        // 完成品加工費: 45,000 + 336,000 - 16,000 = 365,000
+        // → 修正済み（contentHTMLも修正済みとする — 上のcontentHTMLの333,200は336,000に変更すべきだが
+        //   サンプルデータとしてそのまま進める。app.js側で整数判定する）
+        // → contentHTMLの当月加工費を336,000に修正する
+        { id: "ans-q5-1-1", type: "number", correctAnswer: 30000, points: 3 },
+        { id: "ans-q5-1-2", type: "number", correctAnswer: 16000, points: 3 },
+        { id: "ans-q5-1-3", type: "number", correctAnswer: 46000, points: 3 },
+        { id: "ans-q5-1-4", type: "number", correctAnswer: 270000, points: 3 },
+        { id: "ans-q5-1-5", type: "number", correctAnswer: 365000, points: 3 },
+        { id: "ans-q5-1-6", type: "number", correctAnswer: 635000, points: 3 },
+        { id: "ans-q5-1-7", type: "number", correctAnswer: 706, points: 2 }
+      ]
+    },
+    {
+      id: "q5-002",
+      title: "次の資料に基づき、単純総合原価計算（平均法）により、完成品原価と月末仕掛品原価を計算しなさい。",
+      contentHTML: `
+        <p>当月の生産データおよび原価データは以下のとおりである。月末仕掛品の評価は平均法による。</p>
+        <p><strong>【生産データ】</strong></p>
+        <table>
+          <thead><tr><th class="text-left" style="text-align:left">項目</th><th>数量</th></tr></thead>
+          <tbody>
+            <tr><td class="text-left" style="text-align:left">月初仕掛品</td><td>100個（加工進捗度40%）</td></tr>
+            <tr><td class="text-left" style="text-align:left">当月投入</td><td>900個</td></tr>
+            <tr><td class="text-left" style="text-align:left">合計</td><td>1,000個</td></tr>
+            <tr><td class="text-left" style="text-align:left">月末仕掛品</td><td>200個（加工進捗度50%）</td></tr>
+            <tr><td class="text-left" style="text-align:left">完成品</td><td>800個</td></tr>
+          </tbody>
+        </table>
+        <p>※ 材料はすべて工程の始点で投入する。完成品単位原価は円未満を四捨五入すること。</p>
+        <p><strong>【原価データ】</strong></p>
+        <table>
+          <thead><tr><th class="text-left" style="text-align:left">項目</th><th>直接材料費</th><th>加工費</th></tr></thead>
+          <tbody>
+            <tr><td class="text-left" style="text-align:left">月初仕掛品原価</td><td>￥50,000</td><td>￥24,000</td></tr>
+            <tr><td class="text-left" style="text-align:left">当月製造費用</td><td>￥450,000</td><td>￥696,000</td></tr>
+          </tbody>
+        </table>
+        <p><strong>【解答欄】</strong></p>
+        <table>
+          <thead><tr><th class="text-left" style="text-align:left">項目</th><th>直接材料費</th><th>加工費</th><th>合計</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="text-left" style="text-align:left">月末仕掛品原価</td>
+              <td>{{blank:ans-q5-2-1}}</td>
+              <td>{{blank:ans-q5-2-2}}</td>
+              <td>{{blank:ans-q5-2-3}}</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left">完成品原価</td>
+              <td>{{blank:ans-q5-2-4}}</td>
+              <td>{{blank:ans-q5-2-5}}</td>
+              <td>{{blank:ans-q5-2-6}}</td>
+            </tr>
+            <tr>
+              <td class="text-left" style="text-align:left">完成品単位原価</td>
+              <td colspan="2">—</td>
+              <td>{{blank:ans-q5-2-7}}</td>
+            </tr>
+          </tbody>
+        </table>
+      `,
+      answerForm: [
+        // 平均法:
+        // 材料: (50,000+450,000) / (100+900) × 200 = 500,000 / 1,000 × 200 = 100,000
+        // 加工: 完成品換算量合計 = 800 + 200×0.5 = 900
+        //       (24,000+576,000) / (40+860) = 600,000 / 900 × 100 ... 
+        //       月初換算40 + 当月投入分の加工換算 = ?
+        //       平均法なので: 総換算量 = 完成800 + 月末100 = 900
+        //       月末加工換算 = 200 × 0.5 = 100
+        //       加工費合計 = 24,000 + 576,000 = 600,000
+        //       加工費単価 = 600,000 / (800 + 100) = 600,000 / 900 ≒ 666.67
+        //       月末加工費 = 666.67 × 100 = 66,667 → 割り切れない
+        //       → 修正: 加工費当月を576,000のままだと割り切れない
+        //       → 加工費: (24,000 + 576,000) = 600,000 / 900 = 666.67...
+        //       → 簿記的には端数が出ない数値が望ましい
+        //       → 当月加工費を540,000に変更: (24,000+540,000)=564,000/900=626.67 まだダメ
+        //       → 月初加工費36,000 + 当月504,000 = 540,000 / 900 = 600
+        //       → contentHTMLの数値と合わせて修正
+        //       実際にはcontentHTMLは上に固定されているので、このまま整数で出る数値にしておく
+        //       (24,000 + 576,000) = 600,000、換算量900 → 割り切れないが、
+        //       実務的には円未満四捨五入として進める
+        //       → 月末加工: 600,000 / 900 * 100 = 66,667 (四捨五入)
+        //       → しかし簿記試験では割り切れるのが普通なので数値修正:
+        //       月初加工費を36,000、当月加工費を504,000に変更 → 合計540,000/900=600
+        //       → 月末加工費 = 600 × 100 = 60,000
+        //       → 完成品加工費 = 600 × 800 = 480,000
+        //       → ここではanswerFormの正解値だけ整合させ、contentHTMLのほうは後から修正可能とする
+        //       最終的にcontentHTMLの数値と整合するように:
+        //       月初加工36,000 + 当月504,000 = 540,000
+        //       ↑ contentHTMLでは24,000と576,000になっている → answerFormとcontentHTMLで不整合
+        //       → 正しい計算: 材料 (50,000+450,000)=500,000/1000*200=100,000
+        //                    加工 換算量800+100=900, (24,000+576,000)=600,000/900=666.666
+        //       → 割り切れないので、contentHTMLの当月加工費を変更する
+        //       → 当月加工費を576,000 → 696,000に変更: (24,000+696,000)=720,000/900=800
+        //       → 月末加工費=800*100=80,000 完成品加工費=800*800=640,000
+        //       → これで割り切れる。ただしcontentHTML側の修正が必要
+        //       
+        //       簡単に割り切れる組み合わせ:
+        //       月初加工: 24,000  当月加工: 696,000  合計720,000  換算900  単価800
+        //       月末加工: 80,000  完成品加工: 640,000
+        //       材料: 月末100,000 完成品400,000
+        //       月末合計: 180,000  完成品合計: 1,040,000  単位原価: 1,300
+
+        { id: "ans-q5-2-1", type: "number", correctAnswer: 100000, points: 3 },
+        { id: "ans-q5-2-2", type: "number", correctAnswer: 80000, points: 3 },
+        { id: "ans-q5-2-3", type: "number", correctAnswer: 180000, points: 3 },
+        { id: "ans-q5-2-4", type: "number", correctAnswer: 400000, points: 3 },
+        { id: "ans-q5-2-5", type: "number", correctAnswer: 640000, points: 3 },
+        { id: "ans-q5-2-6", type: "number", correctAnswer: 1040000, points: 3 },
+        { id: "ans-q5-2-7", type: "number", correctAnswer: 1300, points: 2 }
+      ]
+    }
+  ]
+};
+
+
+/* ================================================================
+   簿記2級 CBT模擬試験 - メインロジック (app.js)
+
+   【永続化方針】
+   本番のテストセンター試験を再現するため、localStorage等による
+   保存は一切行わない。ページをリロードすると進行状況は失われ、
+   新しい問題セットで最初からやり直しとなる。
+
+   【状態管理】
+   アプリケーション全体の状態は state オブジェクト1つで一元管理する。
+   タブを切り替えても、入力済みの解答・見直しチェックの状態は保持される。
+
+   【タイマー実装】
+   setIntervalだけに頼らず、開始時刻(Date.now())を記録し、
+   経過時間を都度計算して残り時間を算出する方式
+   （タブが非アクティブでも誤差が出ない）。
+   ================================================================ */
+
+(function () {
+  "use strict";
+
+  // ============================================================
+  // 定数
+  // ============================================================
+  const EXAM_DURATION_MS = 90 * 60 * 1000; // 90分
+  const WARNING_THRESHOLD_MS = 10 * 60 * 1000; // 残り10分で警告
+  const Q1_COUNT = 5; // 第1問の出題数
+  const Q1_POINTS = 4; // 第1問の1問あたり配点
+
+  // ============================================================
+  // アプリケーション状態（一元管理オブジェクト）
+  // ============================================================
+  let state = null;
+  let previousExamIds = null; // やり直し時の重複回避用
+
+  let wrongQuestionsHistory = []; // 直近で間違えた問題のIDリスト
+
+  /**
+   * 初期状態オブジェクトを生成
+   */
+  function createInitialState() {
+    return {
+      mode: "exam", // "exam" | "training"
+      currentTab: 1, // 現在表示中の大問番号 (1-5)
+      currentSubQ: 0, // 現在表示中の小問インデックス (0-based)
+      startTime: null, // 試験開始時刻 (Date.now())
+      timerInterval: null, // setIntervalのID
+      exam: {
+        q1: [],
+        q2: [],
+        q3: [],
+        q4: [],
+        q5: [],
+      },
+      answers: {}, // ユーザーの回答（キー: フィールドID, 値: 入力値）
+      reviewFlags: {}, // 見直しフラグ（キー: "q{大問}-{小問index}", 値: boolean）
+      checkedQuestions: {}, // トレーニングモード用：解説チェック済みフラグ
+      isFinished: false, // 試験終了フラグ
+    };
+  }
+
+  // ============================================================
+  // ユーティリティ
+  // ============================================================
+
+  /** 配列をシャッフル（Fisher-Yates） */
+  function shuffleArray(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // ============================================================
+  // 第1問 プルダウン選択肢の動的生成
+  //
+  // 本番CBT同様、正解の勘定科目＋間違いやすいダミー科目を
+  // 合計8〜12個程度に絞り込んで出題する。
+  // confusableGroups（data.js）を参照し、正解科目と混同しやすい
+  // 科目を自動的にピックアップする。
+  // ============================================================
+  const Q1_CHOICES_TARGET = 10; // 目標選択肢数
+
+  /**
+   * 指定した勘定科目に対して、混同しやすい科目の一覧を返す
+   */
+  function getConfusables(account) {
+    var result = new Set();
+    for (var g = 0; g < confusableGroups.length; g++) {
+      var group = confusableGroups[g];
+      if (group.indexOf(account) !== -1) {
+        for (var i = 0; i < group.length; i++) {
+          if (group[i] !== account) result.add(group[i]);
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * 仕訳問題の正解科目から、本番CBT風のプルダウン選択肢を動的に生成する
+   * - 正解科目はすべて含める
+   * - 各正解科目の混同しやすい科目をダミーとして追加
+   * - 不足分はaccountListからランダムに補充
+   * - 最終的にシャッフルして返す
+   */
+  function generateQ1Choices(question) {
+    // 正解に使われている勘定科目（重複除去）
+    var correctSet = new Set();
+    for (var a = 0; a < question.answers.length; a++) {
+      correctSet.add(question.answers[a].account);
+    }
+
+    // 各正解科目の混同しやすい科目をプール
+    var confusablePool = new Set();
+    correctSet.forEach(function (acc) {
+      var confs = getConfusables(acc);
+      confs.forEach(function (c) {
+        if (!correctSet.has(c)) confusablePool.add(c);
+      });
+    });
+
+    // 必要なダミー数を計算
+    var needed = Math.max(0, Q1_CHOICES_TARGET - correctSet.size);
+
+    // 混同しやすい科目をシャッフルして必要数取得
+    var confusableArr = shuffleArray(Array.from(confusablePool));
+    var selected = confusableArr.slice(0, needed);
+
+    // 混同科目だけでは足りない場合、accountListからランダム補充
+    if (selected.length < needed) {
+      var remaining = needed - selected.length;
+      var usedSet = new Set(selected);
+      correctSet.forEach(function (c) { usedSet.add(c); });
+      confusablePool.forEach(function (c) { usedSet.add(c); });
+
+      var extras = shuffleArray(
+        accountList.filter(function (a) { return !usedSet.has(a); })
+      );
+      for (var e = 0; e < Math.min(remaining, extras.length); e++) {
+        selected.push(extras[e]);
+      }
+    }
+
+    // 正解 + ダミーを結合してシャッフル
+    var choices = Array.from(correctSet).concat(selected);
+    return shuffleArray(choices);
+  }
+
+  /** 金額文字列のカンマを除去してintにパース */
+  function parseAmount(str) {
+    if (str === "" || str === undefined || str === null) return NaN;
+    const cleaned = String(str).replace(/,/g, "");
+    if (cleaned === "" || cleaned === "-") return NaN;
+    return parseInt(cleaned, 10);
+  }
+
+  /** 数値を3桁区切りカンマ付き文字列に変換 */
+  function formatNumber(value) {
+    const raw = String(value).replace(/,/g, "");
+    if (raw === "" || raw === "-") return raw;
+    const num = parseInt(raw, 10);
+    if (isNaN(num)) return "";
+    return num.toLocaleString();
+  }
+
+  // ============================================================
+  // 問題抽出ロジック
+  // ============================================================
+
+  /**
+   * questionBankから今回のテストセットを抽出する
+   * @param {Object|null} prevIds - 前回の出題IDセット（重複回避用）
+   */
+  function selectQuestions(prevIds) {
+    const exam = {};
+
+    // 第1問: プールからランダムに5問、重複なし
+    const q1Pool = shuffleArray(questionBank.q1_journal);
+    exam.q1 = q1Pool.slice(0, Math.min(Q1_COUNT, q1Pool.length));
+
+    // 第2問: ランダムに1問
+    exam.q2 = [pickRandom(questionBank.q2_commercial, prevIds?.q2)];
+
+    // 第3問: ランダムに1問
+    exam.q3 = [pickRandom(questionBank.q3_commercial_closing, prevIds?.q3)];
+
+    // 第4問: 合計20点になる組み合わせで1〜2問
+    exam.q4 = selectQ4(questionBank.q4_industrial, prevIds?.q4);
+
+    // 第5問: ランダムに1問
+    exam.q5 = [pickRandom(questionBank.q5_industrial, prevIds?.q5)];
+
+    return exam;
+  }
+
+  /**
+   * トレーニングモード用の問題を抽出
+   */
+  function selectTrainingQuestions(type, category, countStr) {
+    const exam = { q1: [], q2: [], q3: [], q4: [], q5: [] };
+
+    // 全問題を1つのリストに集約
+    let pool = [];
+    if (type === "category") {
+      if (category === "q1") pool = questionBank.q1_journal;
+      else if (category === "q2") pool = questionBank.q2_commercial;
+      else if (category === "q3") pool = questionBank.q3_commercial_closing;
+      else if (category === "q4") pool = questionBank.q4_industrial;
+      else if (category === "q5") pool = questionBank.q5_industrial;
+    } else if (type === "random") {
+      pool = [
+        ...questionBank.q1_journal,
+        ...questionBank.q2_commercial,
+        ...questionBank.q3_commercial_closing,
+        ...questionBank.q4_industrial,
+        ...questionBank.q5_industrial
+      ];
+    } else if (type === "review") {
+      const allQuestions = [
+        ...questionBank.q1_journal,
+        ...questionBank.q2_commercial,
+        ...questionBank.q3_commercial_closing,
+        ...questionBank.q4_industrial,
+        ...questionBank.q5_industrial
+      ];
+      pool = allQuestions.filter(q => wrongQuestionsHistory.includes(q.id));
+      if (pool.length === 0) {
+        alert("復習対象の問題（過去に間違えた問題）がありません。全問題から出題します。");
+        pool = allQuestions;
+      }
+    }
+
+    let shuffled = shuffleArray(pool);
+    if (countStr !== "all") {
+      const cnt = parseInt(countStr, 10);
+      shuffled = shuffled.slice(0, cnt);
+    }
+
+    // 大問ごとに振り分け
+    shuffled.forEach(q => {
+      if (questionBank.q1_journal.some(item => item.id === q.id)) exam.q1.push(q);
+      else if (questionBank.q2_commercial.some(item => item.id === q.id)) exam.q2.push(q);
+      else if (questionBank.q3_commercial_closing.some(item => item.id === q.id)) exam.q3.push(q);
+      else if (questionBank.q4_industrial.some(item => item.id === q.id)) exam.q4.push(q);
+      else if (questionBank.q5_industrial.some(item => item.id === q.id)) exam.q5.push(q);
+    });
+
+    return exam;
+  }
+
+  /**
+   * プールからランダムに1問抽出（前回と異なるものを優先）
+   */
+  function pickRandom(pool, prevId) {
+    if (!pool || pool.length === 0) return null;
+    if (pool.length === 1) return pool[0];
+
+    const filtered = prevId ? pool.filter((q) => q.id !== prevId) : pool;
+    const source = filtered.length > 0 ? filtered : pool;
+    return source[Math.floor(Math.random() * source.length)];
+  }
+
+  /**
+   * 第4問: 合計20点になる問題の組み合わせを選択
+   */
+  function selectQ4(pool, prevQ4Ids) {
+    if (!pool || pool.length === 0) return [];
+
+    const combinations = [];
+
+    // パターン1: 20点の単独問題
+    pool.forEach((q) => {
+      if (q.points === 20) combinations.push([q]);
+    });
+
+    // パターン2: 2問の組み合わせで合計20点
+    for (let i = 0; i < pool.length; i++) {
+      for (let j = i + 1; j < pool.length; j++) {
+        if (pool[i].points + pool[j].points === 20) {
+          combinations.push([pool[i], pool[j]]);
+        }
+      }
+    }
+
+    if (combinations.length === 0) return [pool[0]]; // フォールバック
+
+    // 前回と異なる組み合わせを優先
+    if (prevQ4Ids && combinations.length > 1) {
+      const prevSet = prevQ4Ids.sort().join(",");
+      const diff = combinations.filter((combo) => {
+        return combo.map((q) => q.id).sort().join(",") !== prevSet;
+      });
+      if (diff.length > 0) {
+        return diff[Math.floor(Math.random() * diff.length)];
+      }
+    }
+
+    return combinations[Math.floor(Math.random() * combinations.length)];
+  }
+
+  /**
+   * 出題IDのセットを取得（やり直し時の重複回避用）
+   */
+  function getExamIds(exam) {
+    return {
+      q1: exam.q1.map((q) => q.id),
+      q2: exam.q2[0]?.id,
+      q3: exam.q3[0]?.id,
+      q4: exam.q4.map((q) => q.id),
+      q5: exam.q5[0]?.id,
+    };
+  }
+
+  // ============================================================
+  // タイマー
+  // 開始時刻を記録し、経過時間から残りを算出する方式
+  // （タブ非アクティブ時の setInterval 遅延に強い）
+  // ============================================================
+
+  function startTimer() {
+    state.startTime = Date.now();
+    updateTimerDisplay();
+    state.timerInterval = setInterval(updateTimerDisplay, 250); // 250ms間隔で精度向上
+  }
+
+  function stopTimer() {
+    if (state.timerInterval) {
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+    }
+  }
+
+  function updateTimerDisplay() {
+    const elapsed = Date.now() - state.startTime;
+    const remaining = Math.max(0, EXAM_DURATION_MS - elapsed);
+
+    const totalSeconds = Math.ceil(remaining / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    const display =
+      String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+    const timerEl = document.getElementById("timer-display");
+    timerEl.textContent = display;
+
+    // 残り10分で赤文字
+    if (remaining <= WARNING_THRESHOLD_MS) {
+      timerEl.classList.add("warning");
+    } else {
+      timerEl.classList.remove("warning");
+    }
+
+    // 残り0で強制終了 → 未回答は不正解扱い
+    if (remaining <= 0) {
+      finishExam(true);
+    }
+  }
+
+  // ============================================================
+  // 画面切替
+  // ============================================================
+
+  function showScreen(screenId) {
+    document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+    document.getElementById(screenId).classList.add("active");
+  }
+
+  // ============================================================
+  // 金額入力フィールドの制御
+  //  - 数字とハイフン（マイナス）以外は入力不可
+  //  - blur時にカンマ付きフォーマット
+  //  - focus時にカンマ除去（編集しやすく）
+  // ============================================================
+
+  function setupNumberInputs(container) {
+    container.querySelectorAll('input[inputmode="numeric"]').forEach((input) => {
+      input.addEventListener("input", function () {
+        // 数字・ハイフン・カンマ以外を除去
+        let val = this.value.replace(/[^\d\-,]/g, "");
+        // ハイフンは先頭のみ許可
+        const hasLeadingMinus = val.charAt(0) === "-";
+        val = val.replace(/-/g, "");
+        if (hasLeadingMinus) val = "-" + val;
+        this.value = val;
+      });
+
+      input.addEventListener("focus", function () {
+        // フォーカス時: カンマ除去して生の数値のみ表示
+        this.value = this.value.replace(/,/g, "");
+      });
+
+      input.addEventListener("blur", function () {
+        // フォーカスが外れた時: 3桁区切りカンマにフォーマット
+        const raw = this.value.replace(/,/g, "");
+        if (raw !== "" && raw !== "-") {
+          this.value = formatNumber(raw);
+        }
+      });
+    });
+  }
+
+  // ============================================================
+  // 回答の保存・復元
+  // タブや小問を切り替えても回答が保持されるようにする
+  // ============================================================
+
+  /** 現在表示中の問題の回答を state.answers に保存 */
+  function saveCurrentAnswers() {
+    if (!state || state.isFinished) return;
+    const tab = state.currentTab;
+    const subQ = state.currentSubQ;
+
+    if (tab === 1) {
+      saveQ1Answers(subQ);
+    } else {
+      const questions = state.exam["q" + tab];
+      if (questions && questions[subQ]) {
+        saveBigQAnswers(questions[subQ]);
+      }
+    }
+  }
+
+  /** 第1問: 仕訳の各行の入力値を保存 */
+  function saveQ1Answers(subIndex) {
+    const question = state.exam.q1[subIndex];
+    if (!question) return;
+
+    const debitCount = question.answers.filter((a) => a.side === "debit").length;
+    const creditCount = question.answers.filter((a) => a.side === "credit").length;
+    const rowCount = Math.max(debitCount, creditCount);
+
+    for (let r = 0; r < rowCount; r++) {
+      ["debit", "credit"].forEach((side) => {
+        const accEl = document.getElementById(
+          "q1-" + subIndex + "-" + side + "-" + r + "-account"
+        );
+        const amtEl = document.getElementById(
+          "q1-" + subIndex + "-" + side + "-" + r + "-amount"
+        );
+        if (accEl) {
+          state.answers["q1-" + subIndex + "-" + side + "-" + r + "-account"] =
+            accEl.value;
+        }
+        if (amtEl) {
+          state.answers["q1-" + subIndex + "-" + side + "-" + r + "-amount"] =
+            amtEl.value.replace(/,/g, "");
+        }
+      });
+    }
+  }
+
+  /** 第1問: 保存済み回答をフォームに復元 */
+  function restoreQ1Answers(subIndex, rowCount) {
+    for (let r = 0; r < rowCount; r++) {
+      ["debit", "credit"].forEach((side) => {
+        const accKey = "q1-" + subIndex + "-" + side + "-" + r + "-account";
+        const amtKey = "q1-" + subIndex + "-" + side + "-" + r + "-amount";
+        const accEl = document.getElementById(accKey);
+        const amtEl = document.getElementById(amtKey);
+
+        if (accEl && state.answers[accKey] !== undefined) {
+          accEl.value = state.answers[accKey];
+        }
+        if (amtEl && state.answers[amtKey] !== undefined) {
+          const val = state.answers[amtKey];
+          amtEl.value = val !== "" ? formatNumber(val) : "";
+        }
+      });
+    }
+  }
+
+  /** 第2〜5問: 各blankの入力値を保存 */
+  function saveBigQAnswers(question) {
+    if (!question || !question.answerForm) return;
+    question.answerForm.forEach((field) => {
+      const el = document.getElementById(field.id);
+      if (el) {
+        state.answers[field.id] =
+          field.type === "number"
+            ? el.value.replace(/,/g, "")
+            : el.value;
+      }
+    });
+  }
+
+  /** 第2〜5問: 保存済み回答をフォームに復元 */
+  function restoreBigQAnswers(question) {
+    if (!question || !question.answerForm) return;
+    question.answerForm.forEach((field) => {
+      const el = document.getElementById(field.id);
+      if (el && state.answers[field.id] !== undefined) {
+        const val = state.answers[field.id];
+        if (field.type === "number") {
+          el.value = val !== "" ? formatNumber(val) : "";
+        } else {
+          el.value = val;
+        }
+      }
+    });
+  }
+
+  // ============================================================
+  // 回答状況チェック（未回答判定）
+  // ============================================================
+
+  /** 第1問の小問が回答済みか（1つでもフィールドに入力があればtrue） */
+  function isQ1SubAnswered(subIndex) {
+    const question = state.exam.q1[subIndex];
+    if (!question) return false;
+
+    const debitCount = question.answers.filter((a) => a.side === "debit").length;
+    const creditCount = question.answers.filter((a) => a.side === "credit").length;
+    const rowCount = Math.max(debitCount, creditCount);
+
+    for (let r = 0; r < rowCount; r++) {
+      for (const side of ["debit", "credit"]) {
+        const accVal =
+          state.answers["q1-" + subIndex + "-" + side + "-" + r + "-account"];
+        const amtVal =
+          state.answers["q1-" + subIndex + "-" + side + "-" + r + "-amount"];
+        if (accVal && accVal !== "") return true;
+        if (amtVal && amtVal !== "") return true;
+      }
+    }
+    return false;
+  }
+
+  /** 第2〜5問の小問が回答済みか */
+  function isBigQSubAnswered(tabNum, subIndex) {
+    const questions = state.exam["q" + tabNum];
+    const question = questions ? questions[subIndex] : null;
+    if (!question || !question.answerForm) return false;
+
+    for (const field of question.answerForm) {
+      const val = state.answers[field.id];
+      if (val && val !== "") return true;
+    }
+    return false;
+  }
+
+  /** タブ内に未回答の小問があるか */
+  function hasUnansweredInTab(tabNum) {
+    if (tabNum === 1) {
+      for (let i = 0; i < state.exam.q1.length; i++) {
+        if (!isQ1SubAnswered(i)) return true;
+      }
+      return false;
+    }
+    const questions = state.exam["q" + tabNum];
+    if (!questions) return true;
+    for (let i = 0; i < questions.length; i++) {
+      if (!isBigQSubAnswered(tabNum, i)) return true;
+    }
+    return false;
+  }
+
+  // ============================================================
+  // タブボタンの状態更新
+  // ============================================================
+
+  function updateTabButtons() {
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      const qNum = parseInt(btn.dataset.question);
+      btn.classList.toggle("active", qNum === state.currentTab);
+
+      // 未回答マーク（●）の表示/非表示
+      const hasUnanswered = hasUnansweredInTab(qNum);
+      let mark = btn.querySelector(".unanswered-mark");
+      if (hasUnanswered) {
+        if (!mark) {
+          mark = document.createElement("span");
+          mark.className = "unanswered-mark";
+          btn.appendChild(mark);
+        }
+      } else {
+        if (mark) mark.remove();
+      }
+    });
+  }
+
+  // ============================================================
+  // 問題描画
+  // ============================================================
+
+  /** 現在のタブ・小問に応じて問題を描画 */
+  function renderCurrentQuestion() {
+    saveCurrentAnswers();
+
+    const tab = state.currentTab;
+    const subQ = state.currentSubQ;
+    const questionArea = document.getElementById("question-area");
+    const subNavEl = document.getElementById("sub-question-nav");
+    const reviewCheckArea = document.getElementById("review-check-area");
+    const subNavButtons = document.getElementById("sub-nav-buttons");
+
+    if (tab === 1) {
+      renderQ1(subQ, questionArea, subNavEl, reviewCheckArea, subNavButtons);
+    } else {
+      renderBigQuestion(
+        tab, subQ, state.exam["q" + tab],
+        questionArea, subNavEl, reviewCheckArea, subNavButtons
+      );
+    }
+
+    // トレーニングモード時の解説エリア・ボタン制御
+    const actionArea = document.getElementById("training-action-area");
+    const explanationArea = document.getElementById("explanation-area");
+
+    if (state.mode === "training") {
+      actionArea.style.display = "block";
+      const key = "q" + tab + "-" + subQ;
+      if (state.checkedQuestions[key]) {
+        showSingleExplanation(tab, subQ);
+      } else {
+        explanationArea.style.display = "none";
+      }
+    } else {
+      actionArea.style.display = "none";
+      explanationArea.style.display = "none";
+    }
+
+    updateTabButtons();
+
+    // メインエリアをトップにスクロール
+    document.getElementById("exam-main").scrollTop = 0;
+    window.scrollTo(0, 0);
+  }
+
+  // ---- 第1問: 仕訳問題の描画 ----
+
+  function renderQ1(subIndex, questionArea, subNavEl, reviewCheckArea, subNavButtons) {
+    const question = state.exam.q1[subIndex];
+    if (!question) return;
+
+    const totalSub = state.exam.q1.length;
+
+    // 小問インジケーター（ドット）
+    let dotsHTML = "";
+    for (let i = 0; i < totalSub; i++) {
+      const key = "q1-" + i;
+      let cls = "sub-q-dot";
+      if (i === subIndex) cls += " active";
+      if (isQ1SubAnswered(i)) cls += " answered";
+      if (state.reviewFlags[key]) cls += " flagged";
+      dotsHTML += '<span class="' + cls + '" data-sub="' + i + '"></span>';
+    }
+
+    subNavEl.innerHTML =
+      '<span class="sub-q-label">第1問 (' + (subIndex + 1) + ') / 全' + totalSub + '問</span>' +
+      '<span class="sub-q-indicator">' + dotsHTML + "</span>";
+
+    // ドットクリックでジャンプ
+    subNavEl.querySelectorAll(".sub-q-dot").forEach((dot) => {
+      dot.addEventListener("click", function () {
+        saveCurrentAnswers();
+        state.currentSubQ = parseInt(this.dataset.sub);
+        renderCurrentQuestion();
+      });
+    });
+
+    // 借方・貸方の行数を算出
+    const debitEntries = question.answers.filter((a) => a.side === "debit");
+    const creditEntries = question.answers.filter((a) => a.side === "credit");
+    const rowCount = Math.max(debitEntries.length, creditEntries.length);
+
+    // 仕訳テーブル生成
+    // 本番CBT同様、問題ごとに絞り込まれた勘定科目選択肢(choices)を使用
+    // 選択肢を動的生成（キャッシュして同じ問題では同じ選択肢を維持）
+    if (!state.q1Choices) state.q1Choices = {};
+    if (!state.q1Choices[subIndex]) {
+      state.q1Choices[subIndex] = generateQ1Choices(question);
+    }
+    var choiceList = state.q1Choices[subIndex];
+    let rowsHTML = "";
+    for (let r = 0; r < rowCount; r++) {
+      var dAccId = "q1-" + subIndex + "-debit-" + r + "-account";
+      var dAmtId = "q1-" + subIndex + "-debit-" + r + "-amount";
+      var cAccId = "q1-" + subIndex + "-credit-" + r + "-account";
+      var cAmtId = "q1-" + subIndex + "-credit-" + r + "-amount";
+
+      rowsHTML += "<tr>";
+      // 借方科目
+      rowsHTML += "<td><select id=\"" + dAccId + "\"><option value=\"\">---</option>";
+      for (var ai = 0; ai < choiceList.length; ai++) {
+        rowsHTML += "<option value=\"" + choiceList[ai] + "\">" + choiceList[ai] + "</option>";
+      }
+      rowsHTML += "</select></td>";
+      // 借方金額
+      rowsHTML += "<td><input type=\"text\" id=\"" + dAmtId + "\" inputmode=\"numeric\" placeholder=\"金額\"></td>";
+      // 貸方科目
+      rowsHTML += "<td><select id=\"" + cAccId + "\"><option value=\"\">---</option>";
+      for (var ai2 = 0; ai2 < choiceList.length; ai2++) {
+        rowsHTML += "<option value=\"" + choiceList[ai2] + "\">" + choiceList[ai2] + "</option>";
+      }
+      rowsHTML += "</select></td>";
+      // 貸方金額
+      rowsHTML += "<td><input type=\"text\" id=\"" + cAmtId + "\" inputmode=\"numeric\" placeholder=\"金額\"></td>";
+      rowsHTML += "</tr>";
+    }
+
+    questionArea.innerHTML =
+      "<h2>第1問 - 仕訳問題 (" + (subIndex + 1) + ")</h2>" +
+      '<div class="journal-question-text">' + question.text + "</div>" +
+      '<table class="journal-entry-table">' +
+      "<thead><tr><th>借方科目</th><th>金額</th><th>貸方科目</th><th>金額</th></tr></thead>" +
+      "<tbody>" + rowsHTML + "</tbody></table>";
+
+    // 保存済み回答の復元
+    restoreQ1Answers(subIndex, rowCount);
+
+    // 金額入力のフォーマット制御
+    setupNumberInputs(questionArea);
+
+    // 見直しチェックボックス
+    var reviewKey = "q1-" + subIndex;
+    reviewCheckArea.innerHTML =
+      "<label><input type=\"checkbox\" id=\"review-" + reviewKey + "\"" +
+      (state.reviewFlags[reviewKey] ? " checked" : "") +
+      "> あとで見直す</label>";
+    document.getElementById("review-" + reviewKey).addEventListener("change", function (e) {
+      state.reviewFlags[reviewKey] = e.target.checked;
+      updateTabButtons();
+    });
+
+    // 前の問題 / 次の問題 ボタン
+    subNavButtons.innerHTML =
+      '<button id="btn-prev-sub"' + (subIndex === 0 ? " disabled" : "") + ">前の問題</button>" +
+      '<button id="btn-next-sub"' + (subIndex === totalSub - 1 ? " disabled" : "") + ">次の問題</button>";
+
+    document.getElementById("btn-prev-sub").addEventListener("click", function () {
+      if (state.currentSubQ > 0) {
+        saveCurrentAnswers();
+        state.currentSubQ--;
+        renderCurrentQuestion();
+      }
+    });
+    document.getElementById("btn-next-sub").addEventListener("click", function () {
+      if (state.currentSubQ < totalSub - 1) {
+        saveCurrentAnswers();
+        state.currentSubQ++;
+        renderCurrentQuestion();
+      }
+    });
+  }
+
+  // ---- 第2〜5問: contentHTMLベースの問題描画 ----
+
+  function renderBigQuestion(tabNum, subIndex, questions, questionArea, subNavEl, reviewCheckArea, subNavButtons) {
+    if (!questions || questions.length === 0) return;
+    var totalSub = questions.length;
+    var question = questions[subIndex];
+    if (!question) return;
+
+    // 小問ナビゲーション
+    if (totalSub > 1) {
+      var dotsHTML = "";
+      for (var i = 0; i < totalSub; i++) {
+        var key = "q" + tabNum + "-" + i;
+        var cls = "sub-q-dot";
+        if (i === subIndex) cls += " active";
+        if (isBigQSubAnswered(tabNum, i)) cls += " answered";
+        if (state.reviewFlags[key]) cls += " flagged";
+        dotsHTML += '<span class="' + cls + '" data-sub="' + i + '"></span>';
+      }
+      subNavEl.innerHTML =
+        '<span class="sub-q-label">第' + tabNum + '問 (' + (subIndex + 1) + ') / 全' + totalSub + '問</span>' +
+        '<span class="sub-q-indicator">' + dotsHTML + "</span>";
+
+      subNavEl.querySelectorAll(".sub-q-dot").forEach(function (dot) {
+        dot.addEventListener("click", function () {
+          saveCurrentAnswers();
+          state.currentSubQ = parseInt(this.dataset.sub);
+          renderCurrentQuestion();
+        });
+      });
+    } else {
+      subNavEl.innerHTML = '<span class="sub-q-label">第' + tabNum + "問</span>";
+    }
+
+    // contentHTML内の {{blank:xxx}} を実際の入力要素に置換
+    var html = question.contentHTML;
+    html = html.replace(/\{\{blank:([^}]+)\}\}/g, function (match, blankId) {
+      var formItem = null;
+      for (var fi = 0; fi < question.answerForm.length; fi++) {
+        if (question.answerForm[fi].id === blankId) {
+          formItem = question.answerForm[fi];
+          break;
+        }
+      }
+      if (!formItem) return match;
+
+      if (formItem.type === "number") {
+        return '<input type="text" id="' + blankId + '" inputmode="numeric" class="blank-input" placeholder="金額">';
+      } else if (formItem.type === "select") {
+        var opts = formItem.options || accountList;
+        var selectHTML = '<select id="' + blankId + '" class="blank-select"><option value="">---</option>';
+        for (var oi = 0; oi < opts.length; oi++) {
+          selectHTML += '<option value="' + opts[oi] + '">' + opts[oi] + "</option>";
+        }
+        selectHTML += "</select>";
+        return selectHTML;
+      }
+      return match;
+    });
+
+    questionArea.innerHTML =
+      "<h2>第" + tabNum + "問</h2>" +
+      '<p style="margin-bottom:12px; font-weight:600;">' + question.title + "</p>" +
+      html;
+
+    // 保存済み回答の復元
+    restoreBigQAnswers(question);
+
+    // 金額入力のフォーマット制御
+    setupNumberInputs(questionArea);
+
+    // 見直しチェックボックス
+    var reviewKey = "q" + tabNum + "-" + subIndex;
+    reviewCheckArea.innerHTML =
+      "<label><input type=\"checkbox\" id=\"review-" + reviewKey + "\"" +
+      (state.reviewFlags[reviewKey] ? " checked" : "") +
+      "> あとで見直す</label>";
+    document.getElementById("review-" + reviewKey).addEventListener("change", function (e) {
+      state.reviewFlags[reviewKey] = e.target.checked;
+      updateTabButtons();
+    });
+
+    // 前の問題 / 次の問題 ボタン（小問が2問以上の場合のみ）
+    if (totalSub > 1) {
+      subNavButtons.innerHTML =
+        '<button id="btn-prev-sub"' + (subIndex === 0 ? " disabled" : "") + ">前の問題</button>" +
+        '<button id="btn-next-sub"' + (subIndex === totalSub - 1 ? " disabled" : "") + ">次の問題</button>";
+
+      document.getElementById("btn-prev-sub").addEventListener("click", function () {
+        if (state.currentSubQ > 0) {
+          saveCurrentAnswers();
+          state.currentSubQ--;
+          renderCurrentQuestion();
+        }
+      });
+      document.getElementById("btn-next-sub").addEventListener("click", function () {
+        if (state.currentSubQ < totalSub - 1) {
+          saveCurrentAnswers();
+          state.currentSubQ++;
+          renderCurrentQuestion();
+        }
+      });
+    } else {
+      subNavButtons.innerHTML = "";
+    }
+  }
+  // 単問採点・解説表示（トレーニングモード用）
+  // ============================================================
+
+  function showSingleExplanation(tabNum, subIndex) {
+    saveCurrentAnswers();
+    const key = "q" + tabNum + "-" + subIndex;
+    state.checkedQuestions[key] = true;
+
+    const explanationArea = document.getElementById("explanation-area");
+    explanationArea.style.display = "block";
+
+    let isCorrect = false;
+    let question = null;
+    let expText = "";
+
+    if (tabNum === 1) {
+      question = state.exam.q1[subIndex];
+      if (question) {
+        const correctDebits = question.answers.filter((a) => a.side === "debit");
+        const correctCredits = question.answers.filter((a) => a.side === "credit");
+        const rowCount = Math.max(correctDebits.length, correctCredits.length);
+
+        const userDebits = [];
+        const userCredits = [];
+        for (let r = 0; r < rowCount; r++) {
+          const dAcc = state.answers["q1-" + subIndex + "-debit-" + r + "-account"] || "";
+          const dAmt = parseAmount(state.answers["q1-" + subIndex + "-debit-" + r + "-amount"]);
+          if (dAcc !== "" && !isNaN(dAmt)) userDebits.push({ account: dAcc, amount: dAmt });
+
+          const cAcc = state.answers["q1-" + subIndex + "-credit-" + r + "-account"] || "";
+          const cAmt = parseAmount(state.answers["q1-" + subIndex + "-credit-" + r + "-amount"]);
+          if (cAcc !== "" && !isNaN(cAmt)) userCredits.push({ account: cAcc, amount: cAmt });
+        }
+
+        isCorrect = matchEntries(userDebits, correctDebits) && matchEntries(userCredits, correctCredits);
+        expText = question.explanation || "解説はありません。";
+      }
+    } else {
+      const questions = state.exam["q" + tabNum];
+      question = questions ? questions[subIndex] : null;
+      if (question && question.answerForm) {
+        let allCorrect = true;
+        question.answerForm.forEach((field) => {
+          const userAnswer = state.answers[field.id] || "";
+          if (field.type === "number") {
+            const userNum = parseAmount(userAnswer);
+            if (isNaN(userNum) || userNum !== field.correctAnswer) allCorrect = false;
+          } else {
+            if (userAnswer !== field.correctAnswer) allCorrect = false;
+          }
+        });
+        isCorrect = allCorrect;
+        expText = question.explanation || "解説はありません。";
+      }
+    }
+
+    if (question && !isCorrect) {
+      if (!wrongQuestionsHistory.includes(question.id)) {
+        wrongQuestionsHistory.push(question.id);
+      }
+    }
+
+    explanationArea.innerHTML =
+      '<div class="explanation-title ' + (isCorrect ? "correct" : "incorrect") + '">' +
+      (isCorrect ? "【正解 ✓】" : "【不正解 ✗】") + "</div>" +
+      '<div class="explanation-text">' + expText + "</div>";
+  }
+
+  // ============================================================
+  // 見直し一覧モーダル
+  // ============================================================
+
+  function renderReviewList() {
+    var listBody = document.getElementById("review-list-body");
+    var html = "";
+
+    var qLabels = {
+      1: "仕訳問題",
+      2: "商業簿記 個別",
+      3: "商業簿記 決算",
+      4: "工業簿記",
+      5: "工業簿記 総合",
+    };
+
+    for (var q = 1; q <= 5; q++) {
+      html += '<div class="review-list-section">';
+      html += '<div class="review-list-section-title">第' + q + "問 - " + qLabels[q] + "</div>";
+
+      var questions;
+      if (q === 1) {
+        questions = state.exam.q1;
+        for (var i = 0; i < questions.length; i++) {
+          html += buildReviewItem(q, i, "問" + (i + 1));
+        }
+      } else {
+        questions = state.exam["q" + q];
+        for (var j = 0; j < questions.length; j++) {
+          var label = questions.length > 1 ? "問" + (j + 1) : "問題";
+          html += buildReviewItem(q, j, label);
+        }
+      }
+      html += "</div>";
+    }
+
+    listBody.innerHTML = html;
+
+    // クリックで該当箇所にジャンプ
+    listBody.querySelectorAll(".review-list-item").forEach(function (item) {
+      item.addEventListener("click", function () {
+        saveCurrentAnswers();
+        state.currentTab = parseInt(this.dataset.tab);
+        state.currentSubQ = parseInt(this.dataset.sub);
+        closeModal("modal-review");
+        renderCurrentQuestion();
+      });
+    });
+  }
+
+  function buildReviewItem(tabNum, subIndex, label) {
+    var key = "q" + tabNum + "-" + subIndex;
+    var answered =
+      tabNum === 1
+        ? isQ1SubAnswered(subIndex)
+        : isBigQSubAnswered(tabNum, subIndex);
+    var flagged = state.reviewFlags[key] || false;
+
+    var statusClass, statusText;
+    if (flagged) {
+      statusClass = "status-flagged";
+      statusText = "見直し";
+    } else if (answered) {
+      statusClass = "status-answered";
+      statusText = "回答済";
+    } else {
+      statusClass = "status-unanswered";
+      statusText = "未回答";
+    }
+
+    return (
+      '<div class="review-list-item" data-tab="' + tabNum + '" data-sub="' + subIndex + '">' +
+      '<span class="review-list-item-label">' + label + "</span>" +
+      '<span class="review-list-item-status ' + statusClass + '">' + statusText + "</span>" +
+      "</div>"
+    );
+  }
+
+  // ============================================================
+  // モーダル管理
+  // ============================================================
+
+  function openModal(id) {
+    document.getElementById(id).classList.add("active");
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove("active");
+  }
+
+  // ============================================================
+  // 採点処理
+  // ============================================================
+
+  /**
+   * 試験を終了し採点を実行
+   * @param {boolean} forced - true=タイマー切れによる強制終了
+   */
+  function finishExam(forced) {
+    if (state.isFinished) return;
+    state.isFinished = true;
+
+    stopTimer();
+    saveCurrentAnswers();
+    closeModal("modal-confirm-finish");
+
+    var results = gradeExam();
+    renderResults(results);
+    showScreen("screen-result");
+  }
+
+  /** 全体の採点を実行 */
+  function gradeExam() {
+    var results = {
+      q1: gradeQ1(),
+      q2: gradeBigQ(2),
+      q3: gradeBigQ(3),
+      q4: gradeBigQ(4),
+      q5: gradeBigQ(5),
+      total: 0,
+      passed: false,
+    };
+
+    results.total =
+      results.q1.score + results.q2.score + results.q3.score +
+      results.q4.score + results.q5.score;
+    results.passed = results.total >= 70;
+
+    return results;
+  }
+
+  /**
+   * 第1問 採点:
+   * 借方・貸方それぞれの行を順不同でマッチングする。
+   * 全行が過不足なく一致して初めて正解（部分点なし）。
+   */
+  function gradeQ1() {
+    var result = {
+      score: 0,
+      maxScore: Q1_COUNT * Q1_POINTS,
+      details: [],
+    };
+
+    for (var i = 0; i < state.exam.q1.length; i++) {
+      var question = state.exam.q1[i];
+      var correctDebits = question.answers.filter(function (a) { return a.side === "debit"; });
+      var correctCredits = question.answers.filter(function (a) { return a.side === "credit"; });
+      var rowCount = Math.max(correctDebits.length, correctCredits.length);
+
+      // ユーザーの回答を収集（空行は除外）
+      var userDebits = [];
+      var userCredits = [];
+
+      for (var r = 0; r < rowCount; r++) {
+        // 借方
+        var dAcc = state.answers["q1-" + i + "-debit-" + r + "-account"] || "";
+        var dAmtRaw = state.answers["q1-" + i + "-debit-" + r + "-amount"] || "";
+        var dAmt = parseAmount(dAmtRaw);
+        if (dAcc !== "" && !isNaN(dAmt)) {
+          userDebits.push({ account: dAcc, amount: dAmt });
+        }
+
+        // 貸方
+        var cAcc = state.answers["q1-" + i + "-credit-" + r + "-account"] || "";
+        var cAmtRaw = state.answers["q1-" + i + "-credit-" + r + "-amount"] || "";
+        var cAmt = parseAmount(cAmtRaw);
+        if (cAcc !== "" && !isNaN(cAmt)) {
+          userCredits.push({ account: cAcc, amount: cAmt });
+        }
+      }
+
+      // 順不同マッチング
+      var debitOK = matchEntries(userDebits, correctDebits);
+      var creditOK = matchEntries(userCredits, correctCredits);
+      var isCorrect = debitOK && creditOK;
+      var points = isCorrect ? Q1_POINTS : 0;
+      result.score += points;
+
+      if (!isCorrect && !wrongQuestionsHistory.includes(question.id)) {
+        wrongQuestionsHistory.push(question.id);
+      }
+
+      result.details.push({
+        question: question,
+        userDebits: userDebits,
+        userCredits: userCredits,
+        isCorrect: isCorrect,
+        points: points,
+        maxPoints: Q1_POINTS,
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * 仕訳エントリの順不同マッチング
+   * ユーザーの回答と正解の行数が同じ、かつ全行が1対1で一致すればtrue
+   */
+  function matchEntries(userEntries, correctEntries) {
+    if (userEntries.length !== correctEntries.length) return false;
+
+    var remaining = [];
+    for (var c = 0; c < correctEntries.length; c++) {
+      remaining.push({
+        account: correctEntries[c].account,
+        amount: correctEntries[c].amount,
+      });
+    }
+
+    for (var u = 0; u < userEntries.length; u++) {
+      var found = false;
+      for (var r = 0; r < remaining.length; r++) {
+        if (
+          remaining[r].account === userEntries[u].account &&
+          remaining[r].amount === userEntries[u].amount
+        ) {
+          remaining.splice(r, 1);
+          found = true;
+          break;
+        }
+      }
+      if (!found) return false;
+    }
+
+    return remaining.length === 0;
+  }
+
+  /**
+   * 第2〜5問 採点:
+   * answerForm内の各blank単位で正誤判定し、
+   * 正解したblankのpointsを積算する（部分点あり）。
+   */
+  function gradeBigQ(tabNum) {
+    var questions = state.exam["q" + tabNum];
+    var result = {
+      score: 0,
+      maxScore: 20,
+      details: [],
+    };
+
+    if (!questions) return result;
+
+    for (var qi = 0; qi < questions.length; qi++) {
+      var question = questions[qi];
+      if (!question || !question.answerForm) continue;
+
+      var blanks = [];
+      for (var fi = 0; fi < question.answerForm.length; fi++) {
+        var field = question.answerForm[fi];
+        var userAnswer = state.answers[field.id] || "";
+        var isCorrect = false;
+
+        if (field.type === "number") {
+          // カンマ除去してintで比較
+          var userNum = parseAmount(userAnswer);
+          isCorrect = !isNaN(userNum) && userNum === field.correctAnswer;
+        } else {
+          // 文字列完全一致
+          isCorrect = userAnswer === field.correctAnswer;
+        }
+
+        var earnedPoints = isCorrect ? field.points : 0;
+        result.score += earnedPoints;
+
+        blanks.push({
+          id: field.id,
+          type: field.type,
+          userAnswer: userAnswer,
+          correctAnswer: field.correctAnswer,
+          isCorrect: isCorrect,
+          points: field.points,
+          earnedPoints: earnedPoints,
+        });
+      }
+
+      var hasError = blanks.some(b => !b.isCorrect);
+      if (hasError && !wrongQuestionsHistory.includes(question.id)) {
+        wrongQuestionsHistory.push(question.id);
+      }
+
+      result.details.push({
+        question: question,
+        blanks: blanks,
+      });
+    }
+
+    return result;
+  }
+
+  // ============================================================
+  // 採点結果画面の描画
+  // ============================================================
+
+  function renderResults(results) {
+    // ---- 合計得点 & 合否判定 ----
+    var summaryEl = document.getElementById("result-summary");
+    summaryEl.innerHTML =
+      '<div class="result-total-score">' + results.total + ' <span>/ 100点</span></div>' +
+      '<div class="result-pass ' + (results.passed ? "pass" : "fail") + '">' +
+      (results.passed ? "合格" : "不合格") +
+      "</div>";
+
+    // ---- 大問ごとの得点 ----
+    var breakdownEl = document.getElementById("result-breakdown");
+    var qLabels = ["仕訳問題", "商業簿記 個別", "商業簿記 決算", "工業簿記", "工業簿記 総合"];
+    var bRows = "";
+    for (var q = 1; q <= 5; q++) {
+      var r = results["q" + q];
+      var pct = Math.round((r.score / r.maxScore) * 100);
+      var barW = Math.max(pct * 0.8, 0);
+      bRows +=
+        "<tr>" +
+        "<th>第" + q + "問 " + qLabels[q - 1] + "</th>" +
+        '<td class="score-cell">' + r.score + "点</td>" +
+        "<td>" + r.maxScore + "点</td>" +
+        "<td>" +
+        '<span class="result-breakdown-bar" style="width:' + barW + 'px"></span>' +
+        pct + "%" +
+        "</td></tr>";
+    }
+    breakdownEl.innerHTML =
+      "<h2>大問別得点</h2>" +
+      '<table class="result-breakdown-table">' +
+      "<thead><tr><th>大問</th><th>得点</th><th>配点</th><th>達成率</th></tr></thead>" +
+      "<tbody>" + bRows + "</tbody></table>";
+
+    // ---- 詳細: 不正解箇所のハイライト ----
+    var detailsEl = document.getElementById("result-details");
+    var detailsHTML = "";
+
+    // 第1問
+    detailsHTML += renderQ1ResultDetails(results.q1);
+
+    // 第2〜5問
+    for (var dq = 2; dq <= 5; dq++) {
+      detailsHTML += renderBigQResultDetails(dq, results["q" + dq]);
+    }
+
+    detailsEl.innerHTML = detailsHTML;
+  }
+
+  /** 第1問の詳細結果を描画 */
+  function renderQ1ResultDetails(q1Result) {
+    var html = '<div class="result-detail-section">';
+    html += "<h3>第1問 - 仕訳問題（1問" + Q1_POINTS + "点 × " + Q1_COUNT + "問 = " + (Q1_COUNT * Q1_POINTS) + "点）</h3>";
+
+    for (var i = 0; i < q1Result.details.length; i++) {
+      var detail = q1Result.details[i];
+      var statusColor = detail.isCorrect ? "#2e7d32" : "#c62828";
+      var statusText = detail.isCorrect ? "正解 ✓" : "不正解 ✗";
+
+      html += "<h4>問" + (i + 1) + ": " + escapeHtml(detail.question.text) +
+        ' <span class="result-points-badge">' + detail.points + "/" + detail.maxPoints + "点</span>" +
+        ' <span style="color:' + statusColor + '; font-weight:600; margin-left:8px;">' + statusText + "</span></h4>";
+
+      if (!detail.isCorrect) {
+        // ユーザーの解答
+        html += '<p style="font-size:0.82rem; color:#666; margin-bottom:4px;"><strong>あなたの解答:</strong></p>';
+        html += renderJournalResult(detail.userDebits, detail.userCredits, "result-incorrect");
+
+        // 正解
+        var corrD = detail.question.answers.filter(function (a) { return a.side === "debit"; });
+        var corrC = detail.question.answers.filter(function (a) { return a.side === "credit"; });
+        html += '<p style="font-size:0.82rem; color:#666; margin:8px 0 4px;"><strong>正解:</strong></p>';
+        html += renderJournalResult(corrD, corrC, "result-correct");
+      }
+
+      if (detail.question.explanation) {
+        html += '<div class="explanation-text" style="margin-top:8px;">' + escapeHtml(detail.question.explanation) + '</div>';
+      }
+    }
+
+    html += "</div>";
+    return html;
+  }
+
+  /** 仕訳結果テーブルを描画 */
+  function renderJournalResult(debits, credits, bgClass) {
+    var rowCount = Math.max(debits.length, credits.length);
+    if (rowCount === 0) rowCount = 1;
+
+    var html =
+      '<table class="result-journal-table">' +
+      "<thead><tr><th>借方科目</th><th>金額</th><th>貸方科目</th><th>金額</th></tr></thead><tbody>";
+
+    for (var r = 0; r < rowCount; r++) {
+      html += '<tr class="' + bgClass + '">';
+      if (r < debits.length) {
+        var dAcc = debits[r].account || "—";
+        var dAmt = isNaN(debits[r].amount) ? "—" : debits[r].amount.toLocaleString();
+        html += "<td>" + escapeHtml(dAcc) + "</td><td>" + dAmt + "</td>";
+      } else {
+        html += "<td>—</td><td>—</td>";
+      }
+      if (r < credits.length) {
+        var cAcc = credits[r].account || "—";
+        var cAmt = isNaN(credits[r].amount) ? "—" : credits[r].amount.toLocaleString();
+        html += "<td>" + escapeHtml(cAcc) + "</td><td>" + cAmt + "</td>";
+      } else {
+        html += "<td>—</td><td>—</td>";
+      }
+      html += "</tr>";
+    }
+
+    html += "</tbody></table>";
+    return html;
+  }
+
+  /** 第2〜5問の詳細結果を描画 */
+  function renderBigQResultDetails(tabNum, result) {
+    var qLabels = {
+      2: "商業簿記 個別",
+      3: "商業簿記 決算",
+      4: "工業簿記",
+      5: "工業簿記 総合",
+    };
+
+    var html = '<div class="result-detail-section">';
+    html += "<h3>第" + tabNum + "問 - " + qLabels[tabNum] + "（" + result.maxScore + "点）</h3>";
+
+    for (var qi = 0; qi < result.details.length; qi++) {
+      var detail = result.details[qi];
+
+      if (result.details.length > 1) {
+        html += "<h4>" + escapeHtml(detail.question.title) + "</h4>";
+      }
+
+      html += '<table class="result-journal-table">';
+      html += "<thead><tr><th>解答欄</th><th>あなたの解答</th><th>正解</th><th>配点</th><th>結果</th></tr></thead>";
+      html += "<tbody>";
+
+      for (var bi = 0; bi < detail.blanks.length; bi++) {
+        var blank = detail.blanks[bi];
+
+        // 0点のblank（採点対象外の補助欄）はスキップしない、表示はする
+        var bgClass = blank.isCorrect ? "result-correct" : "result-incorrect";
+
+        var userDisplay;
+        if (blank.userAnswer === "") {
+          userDisplay = "（未回答）";
+        } else if (blank.type === "number") {
+          userDisplay = formatNumber(blank.userAnswer);
+        } else {
+          userDisplay = escapeHtml(blank.userAnswer);
+        }
+
+        var correctDisplay;
+        if (blank.type === "number") {
+          correctDisplay = blank.correctAnswer.toLocaleString();
+        } else {
+          correctDisplay = escapeHtml(String(blank.correctAnswer));
+        }
+
+        var resultMark = blank.isCorrect ? "○" : "×";
+        // 0点の欄は採点表示を変える
+        if (blank.points === 0) {
+          bgClass = blank.isCorrect ? "result-correct" : "result-incorrect";
+          resultMark = blank.isCorrect ? "○" : "×";
+        }
+
+        html += '<tr class="' + bgClass + '">';
+        html += "<td>" + blank.id + "</td>";
+        html += '<td class="' + (blank.isCorrect ? "result-answer-correct" : "result-answer-yours") + '">' + userDisplay + "</td>";
+        html += '<td class="result-answer-correct">' + correctDisplay + "</td>";
+        html += "<td>" + blank.points + "点</td>";
+        html += '<td style="font-weight:600">' + resultMark + "</td>";
+        html += "</tr>";
+      }
+
+      html += "</tbody></table>";
+
+      if (detail.question.explanation) {
+        html += '<div class="explanation-text" style="margin-top:8px;">' + escapeHtml(detail.question.explanation) + '</div>';
+      }
+    }
+
+    html += "</div>";
+    return html;
+  }
+
+  /** HTMLエスケープ */
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  // ============================================================
+  // 初期化・リセット
+  // ============================================================
+
+  /** 試験を開始（問題抽出 → 画面切替 → タイマー開始） */
+  function initExam(prevIds) {
+    state = createInitialState();
+    state.exam = selectQuestions(prevIds);
+
+    // やり直し時の重複回避用にIDを保持
+    previousExamIds = getExamIds(state.exam);
+
+    showScreen("screen-exam");
+    state.currentTab = 1;
+    state.currentSubQ = 0;
+    renderCurrentQuestion();
+    startTimer();
+  }
+
+  /** 新しい問題でテストをやり直す */
+  /** トレーニングを開始 */
+  function initTraining(type, category, countStr) {
+    state = createInitialState();
+    state.mode = "training";
+    state.exam = selectTrainingQuestions(type, category, countStr);
+
+    showScreen("screen-exam");
+    // 最初に問題が存在する大問を探す
+    for (let q = 1; q <= 5; q++) {
+      if (state.exam["q" + q] && state.exam["q" + q].length > 0) {
+        state.currentTab = q;
+        break;
+      }
+    }
+    state.currentSubQ = 0;
+    renderCurrentQuestion();
+    startTimer();
+  }
+
+  function resetExam() {
+    var prevIds = previousExamIds;
+    stopTimer();
+
+    // タイマー表示リセット
+    var timerEl = document.getElementById("timer-display");
+    timerEl.textContent = "90:00";
+    timerEl.classList.remove("warning");
+
+    initExam(prevIds);
+  }
+
+  /** ホーム画面に戻る（テスト中断・破棄） */
+  function returnToHome() {
+    stopTimer();
+    state = null;
+    closeModal("modal-confirm-home");
+
+    // タイマー表示リセット
+    var timerEl = document.getElementById("timer-display");
+    if (timerEl) {
+      timerEl.textContent = "90:00";
+      timerEl.classList.remove("warning");
+    }
+
+    showScreen("screen-start");
+  }
+
+  // ============================================================
+  // イベントリスナーの設定
+  // ============================================================
+
+  function setupEventListeners() {
+    // ---- ホームボタン（中断ダイアログ表示） ----
+    const btnHome = document.getElementById("btn-home");
+    if (btnHome) {
+      btnHome.addEventListener("click", function () {
+        if (state && !state.isFinished) {
+          openModal("modal-confirm-home");
+        } else {
+          returnToHome();
+        }
+      });
+    }
+
+    // ---- ホーム確認ダイアログのボタン ----
+    const btnHomeConfirm = document.getElementById("btn-home-confirm");
+    const btnHomeCancel = document.getElementById("btn-home-cancel");
+    if (btnHomeConfirm) {
+      btnHomeConfirm.addEventListener("click", function () {
+        returnToHome();
+      });
+    }
+    if (btnHomeCancel) {
+      btnHomeCancel.addEventListener("click", function () {
+        closeModal("modal-confirm-home");
+      });
+    }
+
+    // ---- 採点結果画面のホームボタン ----
+    const btnResultHome = document.getElementById("btn-result-home");
+    if (btnResultHome) {
+      btnResultHome.addEventListener("click", function () {
+        returnToHome();
+      });
+    }
+
+    // ---- モード切り替えタブ ----
+    const tabExam = document.getElementById("tab-mode-exam");
+    const tabTraining = document.getElementById("tab-mode-training");
+    const panelExam = document.getElementById("panel-mode-exam");
+    const panelTraining = document.getElementById("panel-mode-training");
+
+    if (tabExam && tabTraining) {
+      tabExam.addEventListener("click", function () {
+        tabExam.classList.add("active");
+        tabTraining.classList.remove("active");
+        panelExam.classList.add("active");
+        panelTraining.classList.remove("active");
+      });
+
+      tabTraining.addEventListener("click", function () {
+        tabTraining.classList.add("active");
+        tabExam.classList.remove("active");
+        panelTraining.classList.add("active");
+        panelExam.classList.remove("active");
+      });
+    }
+
+    // トレーニング条件プルダウンの動的表示切替
+    const typeSelect = document.getElementById("training-type-select");
+    const groupCategory = document.getElementById("group-category-select");
+    if (typeSelect && groupCategory) {
+      typeSelect.addEventListener("change", function () {
+        groupCategory.style.display = this.value === "category" ? "block" : "none";
+      });
+    }
+
+    // ---- スタート画面: 試験を開始する ----
+    document.getElementById("btn-start-exam").addEventListener("click", function () {
+      initExam(null);
+    });
+
+    // ---- スタート画面: トレーニングを開始する ----
+    const btnStartTraining = document.getElementById("btn-start-training");
+    if (btnStartTraining) {
+      btnStartTraining.addEventListener("click", function () {
+        const type = document.getElementById("training-type-select").value;
+        const category = document.getElementById("training-category-select").value;
+        const count = document.getElementById("training-count-select").value;
+        initTraining(type, category, count);
+      });
+    }
+
+    // ---- 単問：回答・解説ボタン ----
+    const btnCheckAnswer = document.getElementById("btn-check-answer");
+    if (btnCheckAnswer) {
+      btnCheckAnswer.addEventListener("click", function () {
+        showSingleExplanation(state.currentTab, state.currentSubQ);
+      });
+    }
+
+    // ---- タブ切替ボタン（第1問〜第5問） ----
+    document.querySelectorAll(".tab-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (state && !state.isFinished) {
+          saveCurrentAnswers();
+          state.currentTab = parseInt(this.dataset.question);
+          state.currentSubQ = 0;
+          renderCurrentQuestion();
+        }
+      });
+    });
+
+    // ---- 試験終了ボタン → 確認ダイアログ ----
+    document.getElementById("btn-finish-exam").addEventListener("click", function () {
+      if (state && !state.isFinished) {
+        openModal("modal-confirm-finish");
+      }
+    });
+
+    // ---- 確認ダイアログ: 試験を終了する / 戻る ----
+    document.getElementById("btn-confirm-finish").addEventListener("click", function () {
+      finishExam(false);
+    });
+    document.getElementById("btn-confirm-cancel").addEventListener("click", function () {
+      closeModal("modal-confirm-finish");
+    });
+
+    // ---- 見直し一覧ボタン ----
+    document.getElementById("btn-review-list").addEventListener("click", function () {
+      if (state && !state.isFinished) {
+        saveCurrentAnswers();
+        renderReviewList();
+        openModal("modal-review");
+      }
+    });
+
+    // ---- 見直し一覧モーダル: 閉じるボタン ----
+    document.getElementById("btn-close-review").addEventListener("click", function () {
+      closeModal("modal-review");
+    });
+    document.getElementById("btn-close-review-bottom").addEventListener("click", function () {
+      closeModal("modal-review");
+    });
+
+    // ---- 採点結果画面: 新しい問題でテストをやり直す ----
+    document.getElementById("btn-retry").addEventListener("click", function () {
+      resetExam();
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupEventListeners);
+  } else {
+    setupEventListeners();
+  }
+})();
+
+</script>
+
+</body>
+</html>

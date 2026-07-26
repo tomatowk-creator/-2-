@@ -5724,54 +5724,63 @@
       function selectTrainingQuestions(type, category, countStr) {
         const exam = { q1: [], q2: [], q3: [], q4: [], q5: [] };
 
+        const q1List = questionBank.q1_journal || [];
+        const q2List = questionBank.q2_commercial || [];
+        const q3List = questionBank.q3_commercial_closing || [];
+        const q4List = questionBank.q4_industrial || [];
+        const q5List = questionBank.q5_industrial || [];
+        const allQuestions = [...q1List, ...q2List, ...q3List, ...q4List, ...q5List];
+
         // 全問題を1つのリストに集約
         let pool = [];
         if (type === "category") {
-          if (category === "q1") pool = questionBank.q1_journal;
-          else if (category === "q2") pool = questionBank.q2_commercial;
-          else if (category === "q3") pool = questionBank.q3_commercial_closing;
-          else if (category === "q4") pool = questionBank.q4_industrial;
-          else if (category === "q5") pool = questionBank.q5_industrial;
+          if (category === "q1") pool = q1List;
+          else if (category === "q2") pool = q2List;
+          else if (category === "q3") pool = q3List;
+          else if (category === "q4") pool = q4List;
+          else if (category === "q5") pool = q5List;
         } else if (type === "random") {
-          pool = [
-            ...questionBank.q1_journal,
-            ...questionBank.q2_commercial,
-            ...questionBank.q3_commercial_closing,
-            ...questionBank.q4_industrial,
-            ...questionBank.q5_industrial
-          ];
+          pool = allQuestions;
         } else if (type === "review") {
-          const allQuestions = [
-            ...questionBank.q1_journal,
-            ...questionBank.q2_commercial,
-            ...questionBank.q3_commercial_closing,
-            ...questionBank.q4_industrial,
-            ...questionBank.q5_industrial
-          ];
-          pool = allQuestions.filter(q => wrongQuestionsHistory.includes(q.id));
+          pool = allQuestions.filter(q => {
+            const hist = learningHistory[q.id];
+            return (hist && hist.is_starred) || (wrongQuestionsHistory && wrongQuestionsHistory.includes(q.id));
+          });
           if (pool.length === 0) {
-            alert("復習対象の問題（過去に間違えた問題）がありません。全問題から出題します。");
+            alert("復習対象（要復習マーク付き）の問題がありません。全問題から出題します。");
             pool = allQuestions;
           }
+        }
+
+        if (!pool || pool.length === 0) {
+          pool = allQuestions;
         }
 
         let shuffled = shuffleArray(pool);
         if (countStr !== "all") {
           const cnt = parseInt(countStr, 10);
-          shuffled = shuffled.slice(0, cnt);
+          if (!isNaN(cnt) && cnt > 0) {
+            shuffled = shuffled.slice(0, cnt);
+          }
         }
 
-        // 大問ごとに振り分け
+        // 大問ごとに正確に振り分け
         shuffled.forEach(q => {
-          if (questionBank.q1_journal.some(item => item.id === q.id)) exam.q1.push(q);
-          else if (questionBank.q2_commercial.some(item => item.id === q.id)) exam.q2.push(q);
-          else if (questionBank.q3_commercial_closing.some(item => item.id === q.id)) exam.q3.push(q);
-          else if (questionBank.q4_industrial.some(item => item.id === q.id)) exam.q4.push(q);
-          else if (questionBank.q5_industrial.some(item => item.id === q.id)) exam.q5.push(q);
+          if (q1List.some(item => item.id === q.id)) exam.q1.push(q);
+          else if (q2List.some(item => item.id === q.id)) exam.q2.push(q);
+          else if (q3List.some(item => item.id === q.id)) exam.q3.push(q);
+          else if (q4List.some(item => item.id === q.id)) exam.q4.push(q);
+          else if (q5List.some(item => item.id === q.id)) exam.q5.push(q);
         });
+
+        // もし抽出結果が空の場合はデフォルトで第1問の全問題をセット
+        if (exam.q1.length === 0 && exam.q2.length === 0 && exam.q3.length === 0 && exam.q4.length === 0 && exam.q5.length === 0) {
+          exam.q1 = q1List.slice(0, 5);
+        }
 
         return exam;
       }
+
 
       /**
        * プールからランダムに1問抽出（前回と異なるものを優先）

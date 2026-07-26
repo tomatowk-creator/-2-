@@ -6764,7 +6764,12 @@
       // ============================================================
 
       function renderResults(results) {
-        // ---- 合計得点 & 合否判定 ----
+        if (state.mode === "training") {
+          renderTrainingResults(results);
+          return;
+        }
+
+        // ---- 模擬試験モード: 合計得点 & 合否判定 ----
         var summaryEl = document.getElementById("result-summary");
         summaryEl.innerHTML =
           '<div class="result-total-score">' + results.total + ' <span>/ 100点</span></div>' +
@@ -6810,6 +6815,69 @@
 
         detailsEl.innerHTML = detailsHTML;
       }
+
+      /** トレーニング専用の結果レポート描画 */
+      function renderTrainingResults(results) {
+        var summaryEl = document.getElementById("result-summary");
+        var breakdownEl = document.getElementById("result-breakdown");
+        var detailsEl = document.getElementById("result-details");
+
+        let totalCount = 0;
+        let correctCount = 0;
+
+        for (let q = 1; q <= 5; q++) {
+          const r = results["q" + q];
+          if (r && r.details) {
+            r.details.forEach(d => {
+              totalCount++;
+              if (d.isCorrect) correctCount++;
+            });
+          }
+        }
+
+        const pct = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+        const infoLabel = state.trainingInfo ? state.trainingInfo.label : "トレーニング";
+
+        // ---- トレーニング用結果サマリー (100点満点や合否判定ではなく正答数・正答率) ----
+        summaryEl.innerHTML =
+          '<div style="font-size:1.15rem; color:#1565c0; font-weight:bold; margin-bottom:8px;">🎯 ' + escapeHtml(infoLabel) + ' 演習完了</div>' +
+          '<div class="result-total-score" style="font-size:2.4rem; color:#2c3e50;">' + correctCount + ' <span style="font-size:1.2rem; color:#666;">/ ' + totalCount + ' 問 正解</span></div>' +
+          '<div style="font-size:1.25rem; font-weight:bold; color:' + (pct >= 70 ? "#2e7d32" : "#d32f2f") + '; margin-top:6px;">正答率: ' + pct + '%</div>';
+
+        // トレーニングモードでは大問別得点配点表は不要なためクリア
+        breakdownEl.innerHTML = "";
+
+        // ---- 各問題の詳細解答 & 解説表示 ----
+        var detailsHTML = '<div class="result-detail-section">';
+        detailsHTML += '<h3 style="border-bottom:2px solid #1976d2; padding-bottom:6px; color:#1976d2; margin-bottom:12px;">演習問題の正誤および解説</h3>';
+
+        for (var q = 1; q <= 5; q++) {
+          const r = results["q" + q];
+          if (r && r.details && r.details.length > 0) {
+            r.details.forEach((detail, index) => {
+              var statusColor = detail.isCorrect ? "#2e7d32" : "#c62828";
+              var statusText = detail.isCorrect ? "正解 ✓" : "不正解 ✗";
+              var qid = detail.question ? detail.question.id : "";
+              var isStarred = learningHistory[qid] ? learningHistory[qid].is_starred : false;
+              var qText = detail.question ? (detail.question.text || detail.question.title || "") : "";
+
+              detailsHTML += '<div style="background:#f8f9fa; border:1px solid #e0e0e0; border-radius:8px; padding:14px; margin-bottom:14px;">';
+              detailsHTML += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">';
+              detailsHTML += '<h4 style="margin:0; font-size:1rem; color:#333;">[' + qid + '] ' + escapeHtml(qText) + '</h4>';
+              detailsHTML += '<span style="color:' + statusColor + '; font-weight:bold; font-size:1.1rem; padding:2px 8px; background:#fff; border-radius:4px; border:1px solid ' + statusColor + ';">' + statusText + '</span>';
+              detailsHTML += '</div>';
+
+              if (detail.question && detail.question.explanation) {
+                detailsHTML += '<div style="margin-top:8px; font-size:0.9rem; color:#333; background:#fff; padding:10px; border-radius:6px; border-left:4px solid #1976d2; line-height:1.5;"><strong>【解答のポイント・解説】</strong><br>' + escapeHtml(detail.question.explanation) + '</div>';
+              }
+              detailsHTML += '</div>';
+            });
+          }
+        }
+        detailsHTML += '</div>';
+        detailsEl.innerHTML = detailsHTML;
+      }
+
 
       /** 第1問の詳細結果を描画 */
       function renderQ1ResultDetails(q1Result) {
@@ -6984,10 +7052,31 @@
       function initTraining(type, category, countStr) {
         state = createInitialState();
         state.mode = "training";
+
+        let catName = "";
+        if (category === "q1") catName = "第1問 仕訳";
+        else if (category === "q2") catName = "第2問 商業個別";
+        else if (category === "q3") catName = "第3問 商業決算";
+        else if (category === "q4") catName = "第4問 工業原価";
+        else if (category === "q5") catName = "第5問 工業総合";
+
+        let typeName = "";
+        if (type === "category") typeName = "分野別 [" + catName + "]";
+        else if (type === "random") typeName = "完全ランダム出題";
+        else if (type === "review") typeName = "要復習マーク問題";
+
+        let countName = (countStr === "all") ? "全問" : countStr + "問";
+
+        state.trainingInfo = {
+          type: type,
+          category: category,
+          countStr: countStr,
+          label: typeName + " (" + countName + ")"
+        };
+
         state.exam = selectTrainingQuestions(type, category, countStr);
 
         showScreen("screen-exam");
-        // 最初に問題が存在する大問を探す
         for (let q = 1; q <= 5; q++) {
           if (state.exam["q" + q] && state.exam["q" + q].length > 0) {
             state.currentTab = q;
@@ -6996,8 +7085,8 @@
         }
         state.currentSubQ = 0;
         renderCurrentQuestion();
-        startTimer();
       }
+
 
       function resetExam() {
         var prevIds = previousExamIds;

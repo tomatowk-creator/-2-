@@ -1319,6 +1319,88 @@
         opacity: 0.5;
       }
     }
+    /* ================================================================
+       トレーニングモード専用表示スタイル（強力Override）
+       ================================================================ */
+    body.mode-training #exam-footer {
+      display: none !important;
+    }
+
+    body.mode-training #timer-display {
+      display: none !important;
+    }
+
+    body.mode-training #review-check-area {
+      display: none !important;
+    }
+
+    body.mode-training #training-action-area {
+      display: block !important;
+      margin-top: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    body.mode-training .btn-check {
+      background: linear-gradient(135deg, #2e7d32, #388e3c);
+      color: #fff;
+      font-size: 1.15rem;
+      font-weight: bold;
+      padding: 12px 28px;
+      border-radius: 8px;
+      box-shadow: 0 3px 8px rgba(46, 125, 50, 0.3);
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    body.mode-training .btn-check:hover {
+      background: linear-gradient(135deg, #1b5e20, #2e7d32);
+      transform: translateY(-1px);
+    }
+
+    .training-banner {
+      background: linear-gradient(135deg, #1565c0, #1e88e5);
+      color: #ffffff;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      font-weight: bold;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 6px rgba(21, 101, 192, 0.25);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .training-banner-badge {
+      background: rgba(255, 255, 255, 0.25);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+    }
+
+    .training-nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+      gap: 10px;
+    }
+
+    .training-nav-buttons button {
+      padding: 10px 18px;
+      font-weight: bold;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #f5f5f5;
+      cursor: pointer;
+    }
+
+    .training-nav-buttons button.btn-next {
+      background: #1976d2;
+      color: #fff;
+      border: none;
+    }
   </style>
 </head>
 
@@ -1420,6 +1502,9 @@
     <!-- ---- Main Contents（スクロール領域） ---- -->
     <main id="exam-main">
 
+      <!-- トレーニングモード用：上部情報バナー -->
+      <div id="training-banner" class="training-banner" style="display: none;"></div>
+
       <!-- 小問番号表示 -->
       <div id="sub-question-nav" class="sub-question-nav">
       </div>
@@ -1431,7 +1516,12 @@
       <!-- トレーニングモード用：単問回答・解説アクション -->
       <div id="training-action-area" class="training-action-area" style="display: none;">
         <button id="btn-check-answer" class="btn-check">回答する・解説を表示</button>
+        <div id="training-nav-buttons" class="training-nav-buttons">
+          <button id="btn-training-prev">前の問題</button>
+          <button id="btn-training-next" class="btn-next">次の問題へ</button>
+        </div>
       </div>
+
 
       <!-- 単問採点・解説エリア（トレーニング用） -->
       <div id="explanation-area" class="explanation-area" style="display: none;">
@@ -6118,6 +6208,50 @@
         const reviewCheckArea = document.getElementById("review-check-area");
         const subNavButtons = document.getElementById("sub-nav-buttons");
 
+        const headerTitle = document.querySelector(".header-title");
+        const timerDisplay = document.getElementById("timer-display");
+        const btnFinish = document.getElementById("btn-finish-exam");
+        const trainingBanner = document.getElementById("training-banner");
+        const actionArea = document.getElementById("training-action-area");
+        const explanationArea = document.getElementById("explanation-area");
+
+        if (state.mode === "training") {
+          document.body.classList.add("mode-training");
+          document.body.classList.remove("mode-exam");
+
+          let currentQNum = subQ + 1;
+          let totalQNum = state.exam["q" + tab] ? state.exam["q" + tab].length : 1;
+          let labelStr = state.trainingInfo ? state.trainingInfo.label : "トレーニング";
+
+          if (headerTitle) headerTitle.textContent = "🎯 トレーニングモード";
+          if (timerDisplay) timerDisplay.style.display = "none";
+          if (btnFinish) btnFinish.textContent = "トレーニングを終了して結果を見る";
+
+          if (trainingBanner) {
+            trainingBanner.style.display = "flex";
+            trainingBanner.innerHTML = '<span>🎯 ' + escapeHtml(labelStr) + '</span><span class="training-banner-badge">' + currentQNum + ' / ' + totalQNum + ' 問目</span>';
+          }
+          if (actionArea) actionArea.style.display = "block";
+
+          const key = "q" + tab + "-" + subQ;
+          if (state.checkedQuestions[key]) {
+            showSingleExplanation(tab, subQ);
+          } else {
+            if (explanationArea) explanationArea.style.display = "none";
+          }
+        } else {
+          document.body.classList.add("mode-exam");
+          document.body.classList.remove("mode-training");
+
+          if (headerTitle) headerTitle.textContent = "簿記2級 模擬試験";
+          if (timerDisplay) timerDisplay.style.display = "inline-block";
+          if (btnFinish) btnFinish.textContent = "試験終了";
+
+          if (trainingBanner) trainingBanner.style.display = "none";
+          if (actionArea) actionArea.style.display = "none";
+          if (explanationArea) explanationArea.style.display = "none";
+        }
+
         if (tab === 1) {
           renderQ1(subQ, questionArea, subNavEl, reviewCheckArea, subNavButtons);
         } else {
@@ -6127,29 +6261,13 @@
           );
         }
 
-        // トレーニングモード時の解説エリア・ボタン制御
-        const actionArea = document.getElementById("training-action-area");
-        const explanationArea = document.getElementById("explanation-area");
-
-        if (state.mode === "training") {
-          actionArea.style.display = "block";
-          const key = "q" + tab + "-" + subQ;
-          if (state.checkedQuestions[key]) {
-            showSingleExplanation(tab, subQ);
-          } else {
-            explanationArea.style.display = "none";
-          }
-        } else {
-          actionArea.style.display = "none";
-          explanationArea.style.display = "none";
-        }
-
         updateTabButtons();
 
         // メインエリアをトップにスクロール
         document.getElementById("exam-main").scrollTop = 0;
         window.scrollTo(0, 0);
       }
+
 
       // ---- 第1問: 仕訳問題の描画 ----
 
@@ -7233,6 +7351,64 @@
             showSingleExplanation(state.currentTab, state.currentSubQ);
           });
         }
+
+        // ---- トレーニング専用ナビゲーション（前へ / 次へ） ----
+        const btnTrainingPrev = document.getElementById("btn-training-prev");
+        const btnTrainingNext = document.getElementById("btn-training-next");
+
+        if (btnTrainingPrev) {
+          btnTrainingPrev.addEventListener("click", function () {
+            if (!state) return;
+            saveCurrentAnswers();
+            const tab = state.currentTab;
+            if (state.currentSubQ > 0) {
+              state.currentSubQ--;
+              renderCurrentQuestion();
+            } else {
+              // 前の大問へ移動
+              for (let q = tab - 1; q >= 1; q--) {
+                if (state.exam["q" + q] && state.exam["q" + q].length > 0) {
+                  state.currentTab = q;
+                  state.currentSubQ = state.exam["q" + q].length - 1;
+                  renderCurrentQuestion();
+                  break;
+                }
+              }
+            }
+          });
+        }
+
+        if (btnTrainingNext) {
+          btnTrainingNext.addEventListener("click", function () {
+            if (!state) return;
+            saveCurrentAnswers();
+            const tab = state.currentTab;
+            const currentQuestions = state.exam["q" + tab] || [];
+            if (state.currentSubQ < currentQuestions.length - 1) {
+              state.currentSubQ++;
+              renderCurrentQuestion();
+            } else {
+              // 次の大問へ移動
+              let moved = false;
+              for (let q = tab + 1; q <= 5; q++) {
+                if (state.exam["q" + q] && state.exam["q" + q].length > 0) {
+                  state.currentTab = q;
+                  state.currentSubQ = 0;
+                  renderCurrentQuestion();
+                  moved = true;
+                  break;
+                }
+              }
+              if (!moved) {
+                // 最後の問題の場合はトレーニング終了
+                if (confirm("全てのトレーニング問題が完了しました。演習結果を表示しますか？")) {
+                  finishExam(false);
+                }
+              }
+            }
+          });
+        }
+
 
         // ---- タブ切替ボタン（第1問〜第5問） ----
         document.querySelectorAll(".tab-btn").forEach(function (btn) {

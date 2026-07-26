@@ -1269,18 +1269,9 @@ select, input {
 }
 
 
-</style>
+  </style>
 </head>
 <body>
-
-  <!-- ================================================================
-    簿記2級 CBT模擬試験アプリ
-    
-    【永続化方針】
-    本番のテストセンター試験を再現するため、localStorage等による
-    保存は一切行わない。ページをリロードすると進行状況は失われ、
-    新しい問題セットで最初からやり直しとなる。
-  ================================================================ -->
 
   <!-- ========== スタート画面 ========== -->
   <div id="screen-start" class="screen active">
@@ -1367,12 +1358,10 @@ select, input {
 
       <!-- 小問番号表示 -->
       <div id="sub-question-nav" class="sub-question-nav">
-        <!-- 例: 第2問 (2) / 全4問 — app.jsが動的に生成 -->
       </div>
 
       <!-- 解答エリア -->
       <div id="question-area" class="question-area">
-        <!-- app.jsが動的に問題文・解答フォームを生成 -->
       </div>
 
       <!-- トレーニングモード用：単問回答・解説アクション -->
@@ -1382,12 +1371,10 @@ select, input {
 
       <!-- 単問採点・解説エリア（トレーニング用） -->
       <div id="explanation-area" class="explanation-area" style="display: none;">
-        <!-- 成否判定と解説 -->
       </div>
 
       <!-- 見直しチェック（第1問用：小問ごとに表示） -->
       <div id="review-check-area" class="review-check-area">
-        <!-- app.jsが動的に生成 -->
       </div>
 
     </main>
@@ -1402,9 +1389,7 @@ select, input {
         <button class="tab-btn" data-question="5">第5問</button>
       </div>
       <div class="footer-actions">
-        <!-- 第1問用: 小問ナビゲーション -->
         <div id="sub-nav-buttons" class="sub-nav-buttons">
-          <!-- app.jsが動的に「前の問題」「次の問題」ボタンを生成 -->
         </div>
         <button id="btn-review-list" class="btn-review">見直し一覧</button>
       </div>
@@ -1420,7 +1405,6 @@ select, input {
         <button id="btn-close-review" class="btn-modal-close">&times;</button>
       </div>
       <div id="review-list-body" class="modal-body">
-        <!-- app.jsが全大問・全小問のステータス一覧を動的に生成 -->
       </div>
       <div class="modal-footer">
         <button id="btn-close-review-bottom" class="btn-modal-action">閉じる</button>
@@ -1467,22 +1451,15 @@ select, input {
     <div class="result-container">
       <h1 class="result-title">採点結果</h1>
 
-      <!-- 合計得点 & 合否判定 -->
       <div id="result-summary" class="result-summary">
-        <!-- app.jsが動的に生成 -->
       </div>
 
-      <!-- 大問ごとの得点 -->
       <div id="result-breakdown" class="result-breakdown">
-        <!-- app.jsが動的に生成 -->
       </div>
 
-      <!-- 詳細（不正解箇所のハイライト） -->
       <div id="result-details" class="result-details">
-        <!-- app.jsが動的に生成 -->
       </div>
 
-      <!-- やり直し & ホームに戻るボタン -->
       <div class="result-actions">
         <button id="btn-retry" class="btn-retry">新しい問題でテストをやり直す</button>
         <button id="btn-result-home" class="btn-retry" style="background:#555; margin-left:12px;">ホームに戻る</button>
@@ -1490,7 +1467,6 @@ select, input {
     </div>
   </div>
 
-  <!-- スクリプト読み込み（data.js → app.js の順） -->
   <script>
 /* ================================================================
    簿記2級 CBT模擬試験 - マスターデータ (data.js)
@@ -1792,6 +1768,145 @@ const questionBank = {
       answers: [
         { side: "debit", account: "前払費用", amount: 24000 },
         { side: "credit", account: "保険料", amount: 24000 }
+      ]
+    },
+    {
+      id: "q1-016",
+      text: "当期に発生した役員賞与￥600,000の支給にあたり、所得税の源泉徴収額￥90,000を差し引き、差額を当座預金から支払った。",
+      explanation: "【解説】役員賞与は費用の発生として「役員賞与」（または給料）、源泉徴収額は後日納付する負債として「預り金」、差額を当座預金から支払います。",
+      answers: [
+        { side: "debit", account: "給料", amount: 600000 },
+        { side: "credit", account: "預り金", amount: 90000 },
+        { side: "credit", account: "当座預金", amount: 510000 }
+      ]
+    },
+    {
+      id: "q1-017",
+      text: "ソフトウェア（自社利用）の開発が完了し、ソフトウェア仮勘定に計上していた￥800,000をソフトウェア勘定に振り替えた。",
+      explanation: "【解説】開発中のソフトウェア仮勘定を無形固定資産である「ソフトウェア」勘定へと振り替えます。",
+      answers: [
+        { side: "debit", account: "ソフトウェア", amount: 800000 },
+        { side: "credit", account: "ソフトウェア仮勘定", amount: 800000 }
+      ]
+    },
+    {
+      id: "q1-018",
+      text: "子会社S社株式（取得原価￥1,200,000）を取得し、代金は当座預金から支払った。なお、株式取得に伴う直接の付随費用￥30,000も当座預金から支払った。",
+      explanation: "【解説】子会社株式の取得原価には、購入代金に付随費用（手数料等）を加算して「子会社株式」に計上します。",
+      answers: [
+        { side: "debit", account: "子会社株式", amount: 1230000 },
+        { side: "credit", account: "当座預金", amount: 1230000 }
+      ]
+    },
+    {
+      id: "q1-019",
+      text: "法人税、住民税及び事業税￥350,000が確定し、期中に中間納付した仮払法人税等￥150,000を相殺し、差額は未払法人税等として計上した。",
+      explanation: "【解説】確定した「法人税、住民税及び事業税」から中間納付済みの「仮払法人税等」を差し引いた未納分を「未払法人税等」（負債）に計上します。",
+      answers: [
+        { side: "debit", account: "法人税、住民税及び事業税", amount: 350000 },
+        { side: "credit", account: "仮払法人税等", amount: 150000 },
+        { side: "credit", account: "未払法人税等", amount: 200000 }
+      ]
+    },
+    {
+      id: "q1-020",
+      text: "決算において、当期分のソフトウェア減価償却費￥160,000（定額法、耐用年数5年、残存価額ゼロ）を直額法により計上する。",
+      explanation: "【解説】無形固定資産（ソフトウェア）の償却は直接減額法を行うため、貸方は「ソフトウェア」勘定を直接減額します。借方は「のれん償却」等と同様に「減価償却費」（または無形固定資産償却）です。",
+      answers: [
+        { side: "debit", account: "減価償却費", amount: 160000 },
+        { side: "credit", account: "ソフトウェア", amount: 160000 }
+      ]
+    },
+    {
+      id: "q1-021",
+      text: "決算において、のれん（取得時￥500,000、償却期間20年定額法）の当期分償却額を計上する。",
+      explanation: "【解説】のれんは20年以内の定額法で直接減額償却します。500,000 / 20年 = 25,000円を「のれん償却」および「のれん」直接減額として処理します。",
+      answers: [
+        { side: "debit", account: "のれん償却", amount: 25000 },
+        { side: "credit", account: "のれん", amount: 25000 }
+      ]
+    },
+    {
+      id: "q1-022",
+      text: "当期末に保有するその他有価証券（取得原価￥400,000、時価￥450,000）について、洗替え時価評価法（全部純資産直入法）により評価替えを行う（税効果会計は考慮しない）。",
+      explanation: "【解説】その他有価証券の値上がり益 50,000円は、純資産の部である「その他有価証券評価差額金」（またはその他有価証券評価益）として処理します。",
+      answers: [
+        { side: "debit", account: "その他有価証券", amount: 50000 },
+        { side: "credit", account: "その他有価証券評価益", amount: 50000 }
+      ]
+    },
+    {
+      id: "q1-023",
+      text: "研究開発活動のために研究員の給料￥450,000を当座預金から支払った。",
+      explanation: "【解説】研究開発目的の支出はすべて発生時に「研究開発費」（費用）として計上します。",
+      answers: [
+        { side: "debit", account: "研究開発費", amount: 450000 },
+        { side: "credit", account: "当座預金", amount: 450000 }
+      ]
+    },
+    {
+      id: "q1-024",
+      text: "商品￥300,000を仕入れ、内金として以前に支払っていた前払金￥50,000を相殺し、残額は掛けとした。",
+      explanation: "【解説】仕入の増加に対し、前払金の減少（資産の減少）と買掛金の増加（負債の増加）を計上します。",
+      answers: [
+        { side: "debit", account: "仕入", amount: 300000 },
+        { side: "credit", account: "前払金", amount: 50000 },
+        { side: "credit", account: "買掛金", amount: 250000 }
+      ]
+    },
+    {
+      id: "q1-025",
+      text: "商品￥500,000を売り上げ、内金として以前に受け取っていた前受金￥100,000を相殺し、残額は売掛金とした。",
+      explanation: "【解説】売上の発生に対し、前受金の減少（負債の減少）と売掛金の増加（資産の増加）を計上します。",
+      answers: [
+        { side: "debit", account: "前受金", amount: 100000 },
+        { side: "debit", account: "売掛金", amount: 400000 },
+        { side: "credit", account: "売上", amount: 500000 }
+      ]
+    },
+    {
+      id: "q1-026",
+      text: "決算にあたり、修繕引当金￥80,000を計上する（費用処理）。",
+      explanation: "【解説】当期に対応する修繕費の見込額を「修繕費」（費用）および「修繕引当金」（負債）として設定します。",
+      answers: [
+        { side: "debit", account: "修繕費", amount: 80000 },
+        { side: "credit", account: "修繕引当金", amount: 80000 }
+      ]
+    },
+    {
+      id: "q1-027",
+      text: "建物の修繕を行い、代金￥80,000を当座預金から支払った。なお、修繕引当金の残高が￥80,000存在する。",
+      explanation: "【解説】修繕引当金が設定されているため、修繕引当金を取り崩して当座預金の減少として処理します。",
+      answers: [
+        { side: "debit", account: "修繕引当金", amount: 80000 },
+        { side: "credit", account: "当座預金", amount: 80000 }
+      ]
+    },
+    {
+      id: "q1-028",
+      text: "決算にあたり、当期の受取利息の未収分￥15,000を計上する。",
+      explanation: "【解説】当期に対応する未受け取りの利息は「未収収益」（資産の増加）および「受取利息」（収益の発生）として計上します。",
+      answers: [
+        { side: "debit", account: "未収収益", amount: 15000 },
+        { side: "credit", account: "受取利息", amount: 15000 }
+      ]
+    },
+    {
+      id: "q1-029",
+      text: "決算にあたり、当期の受取家賃の前受分￥30,000を計上する。",
+      explanation: "【解説】当期に受け取った家賃のうち翌期分は「受取家賃」（収益）から減額し、「前受収益」（負債の増加）に振替えます。",
+      answers: [
+        { side: "debit", account: "前受収益", amount: 30000 },
+        { side: "credit", account: "受取家賃", amount: 30000 }
+      ]
+    },
+    {
+      id: "q1-030",
+      text: "取引先に対する売掛金￥180,000について、同社に対する買掛金￥180,000と相殺した。",
+      explanation: "【解説】売掛金と買掛金を相殺するため、借方に買掛金の減少、貸方に売掛金の減少を計上します。",
+      answers: [
+        { side: "debit", account: "買掛金", amount: 180000 },
+        { side: "credit", account: "売掛金", amount: 180000 }
       ]
     }
   ],
@@ -4078,7 +4193,7 @@ const questionBank = {
   }
 })();
 
-</script>
+  </script>
 
 </body>
 </html>

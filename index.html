@@ -7197,9 +7197,17 @@
       }
 
       if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", setupEventListeners);
+        document.addEventListener("DOMContentLoaded", function () {
+          setupEventListeners();
+          if (typeof loadFromSpreadsheet === 'function') {
+            loadFromSpreadsheet();
+          }
+        });
       } else {
         setupEventListeners();
+        if (typeof loadFromSpreadsheet === 'function') {
+          loadFromSpreadsheet();
+        }
       }
     })();
 

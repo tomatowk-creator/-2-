@@ -1531,8 +1531,7 @@
     </div>
   </div>
 
-  <script>
-    /* 簿記2級 CBT模擬試験 - 完全版問題プール */
+  <script>/* 簿記2級 CBT模擬試験 - 完全版問題プール */
 
     let accountList = [
       "現金",
@@ -5142,8 +5141,10 @@
       ]
     };
 
-
-        // ★★★ GASデプロイ後のURLをここに貼り付けてください ★★★
+    // ================================================================
+    // スプレッドシート連動モジュール & API連携
+    // ================================================================
+// ★★★ GASデプロイ後のURLをここに貼り付けてください ★★★
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbypmaNC7BcneDav6JwMI7HygFPFDGeSddCumYpeOSOgolHqR5RMldZIGwPr_qYANBBr/exec';
 
     // データソース状態: 'local' | 'spreadsheet' | 'loading' | 'error'
@@ -5262,10 +5263,10 @@
         const historyRows = getRawSheet(['学習履歴', '履歴']);
         if (historyRows && Array.isArray(historyRows) && historyRows.length > 0) {
           historyRows.forEach(row => {
-            const qid = String(row.question_id || '').trim();
+            const qid = String(row.id || row.question_id || '').trim();
             if (qid) {
               learningHistory[qid] = {
-                is_starred: row.is_starred === true || String(row.is_starred).toUpperCase() === 'TRUE',
+                is_starred: row.is_starred === true || String(row.is_starred).toUpperCase() === 'TRUE' || String(row.is_starred) === '1',
                 attempt_count: Number(row.attempt_count) || 0,
                 correct_count: Number(row.correct_count) || 0,
                 last_result: String(row.last_result || '')
@@ -5294,26 +5295,29 @@
       return rows.map(row => {
         const answers = [];
 
+        // 借方 (1〜3行) - 英語/日本語カラム名バイリンガル対応
         for (let i = 1; i <= 3; i++) {
-          const acc = row['debit_account_' + i];
-          const amt = row['debit_amount_' + i];
+          const acc = row['debit_account_' + i] || row['借方科目' + i] || row['借方科目_' + i];
+          const amt = row['debit_amount_' + i] || row['借方金額' + i] || row['借方金額_' + i];
           if (acc && String(acc).trim() !== '' && amt !== '' && amt !== null && amt !== undefined && !isNaN(Number(amt))) {
             answers.push({ side: 'debit', account: String(acc).trim(), amount: Number(amt) });
           }
         }
 
+        // 貸方 (1〜3行) - 英語/日本語カラム名バイリンガル対応
         for (let i = 1; i <= 3; i++) {
-          const acc = row['credit_account_' + i];
-          const amt = row['credit_amount_' + i];
+          const acc = row['credit_account_' + i] || row['貸方科目' + i] || row['貸方科目_' + i];
+          const amt = row['credit_amount_' + i] || row['貸方金額' + i] || row['貸方金額_' + i];
           if (acc && String(acc).trim() !== '' && amt !== '' && amt !== null && amt !== undefined && !isNaN(Number(amt))) {
             answers.push({ side: 'credit', account: String(acc).trim(), amount: Number(amt) });
           }
         }
 
         return {
-          id: String(row.id || '').trim(),
-          text: String(row.text || row.question || '').trim(),
-          explanation: String(row.explanation || '').trim(),
+          id: String(row.question_id || row.id || row['問題ID'] || '').trim(),
+          text: String(row.question_text || row.text || row.question || row['問題文'] || '').trim(),
+          explanation: String(row.answer_point || row.explanation || row['解答のポイント'] || row['解説'] || '').trim(),
+          difficulty: String(row.difficulty || row['難易度'] || 'B').trim(),
           answers: answers
         };
       }).filter(q => q.id && q.text && q.answers.length > 0);
@@ -5323,10 +5327,10 @@
       const result = { q2: [], q3: [], q4: [], q5: [] };
 
       rows.forEach(row => {
-        const questionId = String(row.id || '').trim();
+        const questionId = String(row.id || row.question_id || row['問題ID'] || '').trim();
         if (!questionId) return;
 
-        let type = String(row.question_type || '').trim().toLowerCase();
+        let type = String(row.question_type || row['カテゴリ'] || row['問題種別'] || '').trim().toLowerCase();
         if (!type) {
           if (questionId.startsWith('q2')) type = 'q2_commercial';
           else if (questionId.startsWith('q3')) type = 'q3_commercial_closing';
@@ -5336,9 +5340,9 @@
 
         const answerForm = [];
         for (let i = 1; i <= 6; i++) {
-          const ansId = row['ans_' + i + '_id'];
-          const ansCorrect = row['ans_' + i + '_correct'];
-          const ansPoints = row['ans_' + i + '_points'];
+          const ansId = row['ans_' + i + '_id'] || row['ans' + i + '_id'];
+          const ansCorrect = row['ans_' + i + '_correct'] || row['ans' + i + '_correct'];
+          const ansPoints = row['ans_' + i + '_points'] || row['ans' + i + '_points'];
 
           if (ansId && String(ansId).trim() !== '') {
             answerForm.push({
@@ -5352,19 +5356,21 @@
 
         if (answerForm.length === 0) return;
 
+        const titleText = String(row.question_text || row.title || row.text || row['問題文'] || row['タイトル'] || '').trim();
+
         let contentHTML = '';
         const existingQ = findExistingQuestion(questionId);
         if (existingQ && existingQ.contentHTML) {
           contentHTML = existingQ.contentHTML;
         } else {
-          contentHTML = generateContentHTML(answerForm, String(row.title || ''));
+          contentHTML = generateContentHTML(answerForm, titleText);
         }
 
         const question = {
           id: questionId,
-          title: String(row.title || '').trim(),
-          points: Number(row.points) || 20,
-          explanation: String(row.explanation || '').trim(),
+          title: titleText,
+          points: Number(row.points || row['配点']) || 20,
+          explanation: String(row.answer_point || row.explanation || row['解答のポイント'] || row['解説'] || '').trim(),
           contentHTML: contentHTML,
           answerForm: answerForm
         };
@@ -5438,31 +5444,54 @@
       return { accounts, groups };
     }
 
-    function sendStarToggle(questionId) {
+    function sendStarToggle(questionId, setStar) {
       if (!GAS_URL) return;
-      const url = GAS_URL + '?action=star&id=' + encodeURIComponent(questionId);
+      let url = GAS_URL + '?action=star&id=' + encodeURIComponent(questionId);
+      if (setStar !== undefined && setStar !== null) {
+        url += '&star=' + (setStar ? 'true' : 'false');
+      }
       fetch(url, { mode: 'no-cors' }).catch(err => {
         console.warn('[Loader] ★トグル送信失敗:', err.message);
       });
     }
 
-    function sendResult(questionId, isCorrect) {
+    function sendResult(questionId, isCorrect, isReviewMode) {
+      // ローカルの復習キャッシュを学習ルールに従って更新
+      if (!learningHistory[questionId]) {
+        learningHistory[questionId] = { is_starred: false, attempt_count: 0, correct_count: 0, last_result: '' };
+      }
+      learningHistory[questionId].attempt_count = (learningHistory[questionId].attempt_count || 0) + 1;
+      if (isCorrect) {
+        learningHistory[questionId].correct_count = (learningHistory[questionId].correct_count || 0) + 1;
+        learningHistory[questionId].last_result = '正解';
+        if (isReviewMode) {
+          learningHistory[questionId].is_starred = false; // 復習モード正解でクリア
+        }
+      } else {
+        learningHistory[questionId].last_result = '不正解';
+        learningHistory[questionId].is_starred = true; // 不正解で自動復習登録
+      }
+
       if (!GAS_URL) return;
-      const url = GAS_URL + '?action=result&id=' + encodeURIComponent(questionId) +
+      let url = GAS_URL + '?action=result&id=' + encodeURIComponent(questionId) +
         '&result=' + (isCorrect ? 'correct' : 'incorrect');
+      if (isReviewMode) {
+        url += '&mode=review';
+      }
       fetch(url, { mode: 'no-cors' }).catch(err => {
         console.warn('[Loader] 結果送信失敗:', err.message);
       });
     }
 
-    function sendResultsBatch(results) {
-      if (!GAS_URL || !results || results.length === 0) return;
+    function sendResultsBatch(results, isReviewMode) {
+      if (!results || results.length === 0) return;
       results.forEach((r, index) => {
         setTimeout(() => {
-          sendResult(r.id, r.correct);
+          sendResult(r.id, r.correct, isReviewMode);
         }, index * 200);
       });
     }
+
 
     function updateDataSourceBadge() {
       const badge = document.getElementById('data-source-badge');
@@ -5490,7 +5519,6 @@
       }
     }
 
-
     /* ================================================================
        簿記2級 CBT模擬試験 - メインロジック (app.js)
     
@@ -5515,6 +5543,7 @@
       // ============================================================
       // 定数
       // ============================================================
+
       const EXAM_DURATION_MS = 90 * 60 * 1000; // 90分
       const WARNING_THRESHOLD_MS = 10 * 60 * 1000; // 残り10分で警告
       const Q1_COUNT = 5; // 第1問の出題数
@@ -6154,10 +6183,10 @@
           });
         });
 
-        // 借方・貸方の行数を算出
+        // 借方・貸方の行数を算出（本番CBT同様、最低2行〜最大3行の入力枠を確保）
         const debitEntries = question.answers.filter((a) => a.side === "debit");
         const creditEntries = question.answers.filter((a) => a.side === "credit");
-        const rowCount = Math.max(debitEntries.length, creditEntries.length);
+        const rowCount = Math.max(2, debitEntries.length, creditEntries.length);
 
         // 仕訳テーブル生成
         // 本番CBT同様、問題ごとに絞り込まれた勘定科目選択肢(choices)を使用
@@ -6544,9 +6573,12 @@
               });
             }
           }
-          sendResultsBatch(resultsBatch);
+          const isReviewMode = state.examMode === 'review' || state.currentMode === 'review' || state.isReview === true;
+          sendResultsBatch(resultsBatch, isReviewMode);
         }
       }
+
+
 
       /** 全体の採点を実行 */
       function gradeExam() {
@@ -7177,8 +7209,10 @@
         }
       }
     })();
-
   </script>
+
+
+
 
 </body>
 

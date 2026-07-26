@@ -1,0 +1,1262 @@
+/* ================================================================
+   簿記2級 CBT模擬試験 - スタイルシート
+   
+   本番のCBT試験に近い、白黒・グレー基調のシンプルで視認性の高いUI。
+   ブレークポイント: 768px（スマートフォン / PC）
+   ================================================================ */
+
+/* ---- リセット & ベース ---- */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Meiryo", "Noto Sans JP", sans-serif;
+  background-color: #f0f0f0;
+  color: #333;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+select, input {
+  font-family: inherit;
+  font-size: 16px; /* iOS Safariフォーカス時ズーム防止 */
+  touch-action: manipulation;
+}
+
+/* ---- 画面切替 ---- */
+.screen {
+  display: none;
+}
+
+.screen.active {
+  display: block;
+}
+
+/* ================================================================
+   スタート画面
+   ================================================================ */
+#screen-start {
+  display: none;
+  min-height: 100vh;
+  background: #fff;
+}
+
+#screen-start.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.start-container {
+  max-width: 560px;
+  width: 100%;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.start-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.start-subtitle {
+  font-size: 0.95rem;
+  color: #666;
+  margin-bottom: 32px;
+}
+
+.start-info {
+  text-align: left;
+  margin-bottom: 32px;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 20px;
+}
+
+.start-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.start-info-table th,
+.start-info-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e8e8e8;
+  font-size: 0.9rem;
+}
+
+.start-info-table th {
+  text-align: left;
+  color: #555;
+  font-weight: 600;
+  width: 40%;
+}
+
+.start-info-table td {
+  text-align: left;
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+.start-info-table tr:last-child th,
+.start-info-table tr:last-child td {
+  border-bottom: none;
+}
+
+.start-breakdown-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.start-breakdown ul {
+  list-style: none;
+  padding: 0;
+}
+
+.start-breakdown li {
+  font-size: 0.85rem;
+  color: #444;
+  padding: 3px 0;
+  padding-left: 16px;
+  position: relative;
+}
+
+.start-breakdown li::before {
+  content: "─";
+  position: absolute;
+  left: 0;
+  color: #aaa;
+}
+
+.btn-start {
+  display: inline-block;
+  padding: 14px 48px;
+  background: #2c2c2c;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  transition: background 0.2s;
+}
+
+.btn-start:hover {
+  background: #444;
+}
+
+.start-note {
+  margin-top: 16px;
+  font-size: 0.75rem;
+  color: #999;
+}
+
+/* ================================================================
+   試験画面 — Header（固定配置）
+   ================================================================ */
+#exam-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 12px;
+  background: #2c2c2c;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.header-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-home {
+  padding: 4px 10px;
+  background: #555;
+  color: #fff;
+  border: 1px solid #777;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-home:hover {
+  background: #777;
+}
+
+.header-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.header-center {
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+.timer {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  color: #fff;
+}
+
+.timer.warning {
+  color: #e53935;
+}
+
+.header-right {
+  flex: 1;
+  text-align: right;
+}
+
+.btn-finish {
+  padding: 6px 14px;
+  background: #c62828;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-finish:hover {
+  background: #e53935;
+}
+
+/* ================================================================
+   試験画面 — Main Contents（スクロール領域）
+   ================================================================ */
+#exam-main {
+  margin-top: 48px;   /* header分 */
+  margin-bottom: 96px; /* footer分 */
+  padding: 16px;
+  min-height: calc(100vh - 48px - 96px);
+}
+
+/* 小問番号ナビ */
+.sub-question-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: #e8e8e8;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;
+}
+
+.sub-question-nav .sub-q-label {
+  font-size: 0.85rem;
+}
+
+.sub-question-nav .sub-q-indicator {
+  display: flex;
+  gap: 6px;
+}
+
+.sub-question-nav .sub-q-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ccc;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sub-question-nav .sub-q-dot.active {
+  background: #2c2c2c;
+}
+
+.sub-question-nav .sub-q-dot.answered {
+  background: #4caf50;
+}
+
+.sub-question-nav .sub-q-dot.flagged {
+  border: 2px solid #ff9800;
+}
+
+/* 問題文エリア */
+.question-area {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 20px;
+  margin-bottom: 12px;
+}
+
+.question-area h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #2c2c2c;
+}
+
+.question-area p {
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+/* ---- 仕訳問題（第1問）専用レイアウト ---- */
+.journal-question-text {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #fafafa;
+  border-left: 3px solid #2c2c2c;
+}
+
+.journal-entry-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+.journal-entry-table th {
+  padding: 8px 6px;
+  background: #2c2c2c;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.journal-entry-table td {
+  padding: 6px;
+  border: 1px solid #ddd;
+  vertical-align: middle;
+}
+
+.journal-entry-table .side-label {
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #555;
+  background: #f5f5f5;
+  width: 30px;
+}
+
+.journal-entry-table select {
+  width: 100%;
+  padding: 6px 4px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: #fff;
+  font-size: 0.85rem;
+  appearance: auto;
+}
+
+.journal-entry-table input[type="text"] {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  text-align: right;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.journal-entry-table input[type="text"]:focus,
+.journal-entry-table select:focus {
+  outline: none;
+  border-color: #2c2c2c;
+  box-shadow: 0 0 0 2px rgba(44, 44, 44, 0.15);
+}
+
+/* ---- 第2〜5問: contentHTML内の表・入力欄 ---- */
+.question-area table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+
+.question-area table th,
+.question-area table td {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  font-size: 0.85rem;
+}
+
+.question-area table th {
+  background: #f0f0f0;
+  font-weight: 600;
+  text-align: center;
+}
+
+.question-area table td {
+  text-align: right;
+}
+
+.question-area table td.text-left {
+  text-align: left;
+}
+
+.question-area table td.text-center {
+  text-align: center;
+}
+
+/* contentHTML内の入力フィールド */
+.blank-input {
+  display: inline-block;
+  width: 140px;
+  padding: 5px 8px;
+  border: 1px solid #999;
+  border-radius: 3px;
+  text-align: right;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  background: #fffff0;
+}
+
+.blank-input:focus {
+  outline: none;
+  border-color: #2c2c2c;
+  box-shadow: 0 0 0 2px rgba(44, 44, 44, 0.15);
+  background: #fff;
+}
+
+.blank-select {
+  display: inline-block;
+  min-width: 120px;
+  padding: 5px 4px;
+  border: 1px solid #999;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  background: #fffff0;
+  appearance: auto;
+}
+
+.blank-select:focus {
+  outline: none;
+  border-color: #2c2c2c;
+  box-shadow: 0 0 0 2px rgba(44, 44, 44, 0.15);
+  background: #fff;
+}
+
+/* 見直しチェック */
+.review-check-area {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-check-area label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #666;
+  cursor: pointer;
+  user-select: none;
+}
+
+.review-check-area input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #ff9800;
+  cursor: pointer;
+}
+
+/* ================================================================
+   Footer Navigation（固定配置）
+   ================================================================ */
+#exam-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #fff;
+  border-top: 1px solid #ddd;
+  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.footer-tabs {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px 0;
+  background: #fafafa;
+  border: none;
+  border-right: 1px solid #e0e0e0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #666;
+  position: relative;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab-btn:last-child {
+  border-right: none;
+}
+
+.tab-btn.active {
+  background: #2c2c2c;
+  color: #fff;
+}
+
+.tab-btn:hover:not(.active) {
+  background: #eee;
+}
+
+/* 未回答マーク（●） */
+.tab-btn .unanswered-mark {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: #e53935;
+  border-radius: 50%;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.tab-btn.active .unanswered-mark {
+  background: #ff8a80;
+}
+
+.footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+}
+
+.sub-nav-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.sub-nav-buttons button {
+  padding: 6px 16px;
+  background: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #444;
+  transition: background 0.15s;
+}
+
+.sub-nav-buttons button:hover {
+  background: #e8e8e8;
+}
+
+.sub-nav-buttons button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-review {
+  padding: 6px 16px;
+  background: #fff;
+  border: 1px solid #999;
+  border-radius: 3px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #444;
+  transition: background 0.15s;
+}
+
+.btn-review:hover {
+  background: #f5f5f5;
+}
+
+/* ================================================================
+   モーダル共通
+   ================================================================ */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 6px;
+  width: 90%;
+  max-width: 520px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal-confirm {
+  max-height: none;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.btn-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: #999;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.btn-modal-close:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 16px 18px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-body p {
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.modal-warning {
+  color: #c62828;
+  font-weight: 600;
+}
+
+.modal-footer {
+  padding: 12px 18px;
+  border-top: 1px solid #e0e0e0;
+  text-align: right;
+}
+
+.modal-footer-confirm {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn-modal-action {
+  padding: 8px 20px;
+  background: #2c2c2c;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-modal-action:hover {
+  background: #444;
+}
+
+.btn-modal-cancel {
+  padding: 8px 20px;
+  background: #f5f5f5;
+  color: #444;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.btn-modal-cancel:hover {
+  background: #e8e8e8;
+}
+
+/* ---- 見直し一覧のリスト ---- */
+.review-list-section {
+  margin-bottom: 16px;
+}
+
+.review-list-section-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  padding: 6px 0;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.review-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-radius: 3px;
+}
+
+.review-list-item:hover {
+  background: #f5f5f5;
+}
+
+.review-list-item-label {
+  font-size: 0.82rem;
+  color: #333;
+}
+
+.review-list-item-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.status-unanswered {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.status-answered {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-flagged {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+/* ================================================================
+   採点結果画面
+   ================================================================ */
+#screen-result {
+  min-height: 100vh;
+  background: #f0f0f0;
+  padding: 20px 16px;
+}
+
+.result-container {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.result-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+/* 合計得点・合否 */
+.result-summary {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.result-total-score {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.result-total-score span {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #666;
+}
+
+.result-pass {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 6px 24px;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.result-pass.pass {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 2px solid #4caf50;
+}
+
+.result-pass.fail {
+  background: #ffebee;
+  color: #c62828;
+  border: 2px solid #e53935;
+}
+
+/* 大問ごとの得点 */
+.result-breakdown {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.result-breakdown h2 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.result-breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.result-breakdown-table th,
+.result-breakdown-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e8e8e8;
+  font-size: 0.85rem;
+}
+
+.result-breakdown-table th {
+  text-align: left;
+  color: #555;
+  font-weight: 600;
+}
+
+.result-breakdown-table td {
+  text-align: center;
+  font-weight: 500;
+}
+
+.result-breakdown-table td.score-cell {
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.result-breakdown-table tr:last-child th,
+.result-breakdown-table tr:last-child td {
+  border-bottom: none;
+}
+
+.result-breakdown-bar {
+  display: inline-block;
+  height: 8px;
+  background: #4caf50;
+  border-radius: 4px;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+/* 詳細: 不正解箇所 */
+.result-details {
+  margin-bottom: 24px;
+}
+
+.result-detail-section {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.result-detail-section h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #2c2c2c;
+}
+
+.result-detail-section h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;
+  margin: 14px 0 8px;
+}
+
+/* 仕訳結果テーブル */
+.result-journal-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+  font-size: 0.82rem;
+}
+
+.result-journal-table th {
+  padding: 6px 8px;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  font-weight: 600;
+  text-align: center;
+}
+
+.result-journal-table td {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+}
+
+/* 正解・不正解のハイライト */
+.result-correct {
+  background: #e8f5e9;
+}
+
+.result-incorrect {
+  background: #ffebee;
+}
+
+.result-answer-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+  font-size: 0.82rem;
+  padding: 6px 8px;
+  border-radius: 3px;
+}
+
+.result-answer-row.correct {
+  background: #e8f5e9;
+}
+
+.result-answer-row.incorrect {
+  background: #ffebee;
+}
+
+.result-answer-label {
+  font-weight: 600;
+  color: #555;
+  min-width: 70px;
+}
+
+.result-answer-yours {
+  color: #c62828;
+}
+
+.result-answer-correct {
+  color: #2e7d32;
+}
+
+.result-points-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 4px;
+  background: #f5f5f5;
+  color: #555;
+  border: 1px solid #ddd;
+}
+
+/* やり直しボタン */
+.result-actions {
+  text-align: center;
+  padding: 16px 0 40px;
+}
+
+.btn-retry {
+  padding: 14px 40px;
+  background: #2c2c2c;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transition: background 0.2s;
+}
+
+.btn-retry:hover {
+  background: #444;
+}
+
+/* ================================================================
+   レスポンシブ対応（768px以下: スマートフォン）
+   ================================================================ */
+@media (max-width: 768px) {
+  .start-container {
+    padding: 32px 16px;
+  }
+
+  .start-title {
+    font-size: 1.4rem;
+  }
+
+  #exam-header {
+    height: 44px;
+    padding: 0 8px;
+  }
+
+  .header-title {
+    font-size: 0.72rem;
+  }
+
+  .timer {
+    font-size: 1.1rem;
+  }
+
+  .btn-finish {
+    padding: 5px 10px;
+    font-size: 0.72rem;
+  }
+
+  #exam-main {
+    margin-top: 44px;
+    margin-bottom: 90px;
+    padding: 10px;
+  }
+
+  .question-area {
+    padding: 14px;
+  }
+
+  .question-area h2 {
+    font-size: 0.95rem;
+  }
+
+  .journal-entry-table th,
+  .journal-entry-table td {
+    padding: 4px 3px;
+    font-size: 0.78rem;
+  }
+
+  .journal-entry-table select {
+    font-size: 0.78rem;
+    padding: 4px 2px;
+  }
+
+  .journal-entry-table input[type="text"] {
+    font-size: 0.78rem;
+    padding: 4px 6px;
+  }
+
+  .blank-input {
+    width: 110px;
+    font-size: 0.8rem;
+  }
+
+  .blank-select {
+    min-width: 100px;
+    font-size: 0.8rem;
+  }
+
+  .tab-btn {
+    padding: 8px 0;
+    font-size: 0.7rem;
+  }
+
+  .footer-actions {
+    padding: 4px 8px;
+  }
+
+  .sub-nav-buttons button {
+    padding: 5px 12px;
+    font-size: 0.72rem;
+  }
+
+  .btn-review {
+    padding: 5px 12px;
+    font-size: 0.72rem;
+  }
+
+  .modal-content {
+    width: 95%;
+    max-height: 85vh;
+  }
+
+  .result-total-score {
+    font-size: 2rem;
+  }
+
+  .result-detail-section {
+    padding: 12px 14px;
+  }
+}
+
+/* ================================================================
+   トレーニングモード & 解説表示
+   ================================================================ */
+
+.start-mode-selection {
+  margin-bottom: 24px;
+}
+
+.mode-tabs {
+  display: flex;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #ddd;
+}
+
+.mode-tab-btn {
+  flex: 1;
+  padding: 12px;
+  background: #f5f5f5;
+  border: none;
+  font-weight: bold;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.mode-tab-btn.active {
+  background: #2c2c2c;
+  color: #fff;
+}
+
+.mode-panel {
+  display: none;
+}
+
+.mode-panel.active {
+  display: block;
+}
+
+.training-options {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.option-group {
+  margin-bottom: 16px;
+}
+
+.option-group:last-child {
+  margin-bottom: 0;
+}
+
+.option-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #444;
+}
+
+.option-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+/* 単問解説エリア */
+.training-action-area {
+  margin-top: 16px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.btn-check {
+  padding: 12px 32px;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-check:hover {
+  background: #1565c0;
+}
+
+.explanation-area {
+  background: #fff;
+  border: 2px solid #1976d2;
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.explanation-title {
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.explanation-title.correct {
+  color: #2e7d32;
+}
+
+.explanation-title.incorrect {
+  color: #c62828;
+}
+
+.explanation-text {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #333;
+  background: #f9f9f9;
+  padding: 12px;
+  border-radius: 4px;
+  border-left: 4px solid #1976d2;
+}
+

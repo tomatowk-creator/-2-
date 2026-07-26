@@ -5143,28 +5143,18 @@
     };
 
 
-    /* ================================================================
-       簿記2級 CBT模擬試験 - スプレッドシート連携ローダー
-       (spreadsheet-loader.js)
-    
-       Googleスプレッドシート ＋ GAS (Google Apps Script) から
-       問題データを取得し、既存の questionBank 形式に変換するモジュール。
-    
-       通信失敗時は data.js のハードコーディングデータにフォールバック。
-       ================================================================ */
-
-    // ★★★ GASデプロイ後のURLをここに貼り付けてください ★★★
+        // ★★★ GASデプロイ後のURLをここに貼り付けてください ★★★
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbypmaNC7BcneDav6JwMI7HygFPFDGeSddCumYpeOSOgolHqR5RMldZIGwPr_qYANBBr/exec';
 
-    // データソース状態: 'local' | 'spreadsheet' | 'loading'
+    // データソース状態: 'local' | 'spreadsheet' | 'loading' | 'error'
     let dataSource = 'local';
+    let lastErrorMsg = '';
 
     // 学習履歴キャッシュ（スプレッドシートから取得した is_starred 情報）
     let learningHistory = {};
 
     /**
      * スプレッドシートから全データを一括取得し、グローバル変数を上書き
-     * @returns {Promise<boolean>} 成功時true、失敗時false（フォールバック使用）
      */
     async function loadFromSpreadsheet() {
       if (!GAS_URL) {
@@ -5178,37 +5168,55 @@
       updateDataSourceBadge();
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒タイムアウト
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
 
       try {
-        const res = await fetch(GAS_URL + '?sheet=all', { signal: controller.signal });
+        const res = await fetch(GAS_URL + '?sheet=all', {
+          method: 'GET',
+          redirect: 'follow',
+          signal: controller.signal
+        });
         clearTimeout(timeoutId);
-        const text = await res.text();
-        const raw = JSON.parse(text);
 
-        // キー名のトリム・正規化対応ヘルパー
-        function getRawSheet(sheetName) {
+        if (!res.ok) {
+          throw new Error('HTTP ' + res.status);
+        }
+
+        const text = await res.text();
+        let raw;
+        try {
+          raw = JSON.parse(text);
+        } catch (e) {
+          throw new Error('JSONパース失敗 (GASの出力を確認してください)');
+        }
+
+        function getRawSheet(names) {
           if (!raw) return null;
-          if (raw[sheetName]) return raw[sheetName];
           const keys = Object.keys(raw);
-          for (let k = 0; k < keys.length; k++) {
-            if (keys[k].trim() === sheetName) return raw[keys[k]];
+          for (let name of names) {
+            const target = name.trim().toLowerCase();
+            for (let k of keys) {
+              if (k.trim().toLowerCase() === target) {
+                return raw[k];
+              }
+            }
           }
           return null;
         }
 
-        const journalRows = getRawSheet('仕訳問題');
-        if (journalRows && journalRows.length > 0) {
+        // 1. 仕訳問題
+        const journalRows = getRawSheet(['仕訳問題', '仕訳', 'q1', 'journal']);
+        if (journalRows && Array.isArray(journalRows) && journalRows.length > 0) {
           const journalData = parseJournalData(journalRows);
           if (journalData.length > 0) {
             questionBank.q1_journal = journalData;
-            console.log('[Loader] 仕訳問題: ' + journalData.length + '問 ロード完了');
+            console.log('[Loader] 第1問(仕訳): ' + journalData.length + '問 ロード完了');
           }
         }
 
-        // ── 商業簿記_総合 → q2_commercial + q3_commercial_closing ──
-        const commercialRows = getRawSheet('商業簿記_総合');
-        if (commercialRows && commercialRows.length > 0) {
+        // 2. 商業簿記_総合
+        const commercialRows = getRawSheet(['商業簿記_総合', '商業簿記', '商業総合', 'q2_q3']);
+        if (commercialRows && Array.isArray(commercialRows) && commercialRows.length > 0) {
           const commercialData = parseBigQuestionData(commercialRows);
           if (commercialData.q2.length > 0) {
             questionBank.q2_commercial = commercialData.q2;
@@ -5220,9 +5228,9 @@
           }
         }
 
-        // ── 工業簿記_総合 → q4_industrial + q5_industrial ──
-        const industrialRows = getRawSheet('工業簿記_総合');
-        if (industrialRows && industrialRows.length > 0) {
+        // 3. 工業簿記_総合
+        const industrialRows = getRawSheet(['工業簿記_総合', '工業簿記', '工業総合', 'q4_q5']);
+        if (industrialRows && Array.isArray(industrialRows) && industrialRows.length > 0) {
           const industrialData = parseBigQuestionData(industrialRows);
           if (industrialData.q4.length > 0) {
             questionBank.q4_industrial = industrialData.q4;
@@ -5234,9 +5242,9 @@
           }
         }
 
-        // ── 勘定科目マスタ → accountList + confusableGroups ──
-        const masterRows = getRawSheet('勘定科目マスタ');
-        if (masterRows && masterRows.length > 0) {
+        // 4. 勘定科目マスタ
+        const masterRows = getRawSheet(['勘定科目マスタ', '勘定科目', 'マスタ']);
+        if (masterRows && Array.isArray(masterRows) && masterRows.length > 0) {
           const masterData = parseAccountMaster(masterRows);
           if (masterData.accounts.length > 0) {
             accountList.length = 0;
@@ -5250,9 +5258,9 @@
           }
         }
 
-        // ── 学習履歴 → learningHistory キャッシュ ──
-        const historyRows = getRawSheet('学習履歴');
-        if (historyRows && historyRows.length > 0) {
+        // 5. 学習履歴
+        const historyRows = getRawSheet(['学習履歴', '履歴']);
+        if (historyRows && Array.isArray(historyRows) && historyRows.length > 0) {
           historyRows.forEach(row => {
             const qid = String(row.question_id || '').trim();
             if (qid) {
@@ -5274,85 +5282,60 @@
 
       } catch (err) {
         clearTimeout(timeoutId);
-        console.warn('[Loader] ⚠️ スプレッドシート接続失敗。ローカルデータを使用します。', err.message);
-        dataSource = 'local';
+        lastErrorMsg = err.message || '通信エラー';
+        console.warn('[Loader] ⚠️ スプレッドシート接続失敗:', lastErrorMsg);
+        dataSource = 'error';
         updateDataSourceBadge();
         return false;
       }
     }
 
-    // ================================================================
-    // データ変換関数
-    // ================================================================
-
-    /**
-     * 仕訳問題シートの行データ → questionBank.q1_journal 形式に変換
-     *
-     * スプレッドシート列: id, text, explanation,
-     *   debit_account_1, debit_amount_1, debit_account_2, debit_amount_2,
-     *   credit_account_1, credit_amount_1, credit_account_2, credit_amount_2,
-     *   credit_account_3, credit_amount_3
-     *
-     * 変換先: { id, text, explanation, answers: [{ side, account, amount }] }
-     */
     function parseJournalData(rows) {
       return rows.map(row => {
         const answers = [];
 
-        // 借方（最大2行）
-        for (let i = 1; i <= 2; i++) {
+        for (let i = 1; i <= 3; i++) {
           const acc = row['debit_account_' + i];
           const amt = row['debit_amount_' + i];
-          if (acc && String(acc).trim() !== '' && amt !== '' && amt !== null && amt !== undefined) {
-            answers.push({
-              side: 'debit',
-              account: String(acc).trim(),
-              amount: Number(amt)
-            });
+          if (acc && String(acc).trim() !== '' && amt !== '' && amt !== null && amt !== undefined && !isNaN(Number(amt))) {
+            answers.push({ side: 'debit', account: String(acc).trim(), amount: Number(amt) });
           }
         }
 
-        // 貸方（最大3行）
         for (let i = 1; i <= 3; i++) {
           const acc = row['credit_account_' + i];
           const amt = row['credit_amount_' + i];
-          if (acc && String(acc).trim() !== '' && amt !== '' && amt !== null && amt !== undefined) {
-            answers.push({
-              side: 'credit',
-              account: String(acc).trim(),
-              amount: Number(amt)
-            });
+          if (acc && String(acc).trim() !== '' && amt !== '' && amt !== null && amt !== undefined && !isNaN(Number(amt))) {
+            answers.push({ side: 'credit', account: String(acc).trim(), amount: Number(amt) });
           }
         }
 
         return {
           id: String(row.id || '').trim(),
-          text: String(row.text || '').trim(),
+          text: String(row.text || row.question || '').trim(),
           explanation: String(row.explanation || '').trim(),
           answers: answers
         };
-      }).filter(q => q.id && q.answers.length > 0);
+      }).filter(q => q.id && q.text && q.answers.length > 0);
     }
 
-    /**
-     * 商業/工業簿記_総合シートの行データ → question_type別に振り分け
-     *
-     * スプレッドシート列: id, question_type, title, points, explanation,
-     *   ans_1_id, ans_1_correct, ans_1_points, ..., ans_4_id, ans_4_correct, ans_4_points
-     *
-     * question_type の値:
-     *   'q2_commercial', 'q3_commercial_closing', 'q4_industrial', 'q5_industrial'
-     */
     function parseBigQuestionData(rows) {
       const result = { q2: [], q3: [], q4: [], q5: [] };
 
       rows.forEach(row => {
-        const type = String(row.question_type || '').trim();
         const questionId = String(row.id || '').trim();
         if (!questionId) return;
 
+        let type = String(row.question_type || '').trim().toLowerCase();
+        if (!type) {
+          if (questionId.startsWith('q2')) type = 'q2_commercial';
+          else if (questionId.startsWith('q3')) type = 'q3_commercial_closing';
+          else if (questionId.startsWith('q4')) type = 'q4_industrial';
+          else if (questionId.startsWith('q5')) type = 'q5_industrial';
+        }
+
         const answerForm = [];
-        for (let i = 1; i <= 4; i++) {
+        for (let i = 1; i <= 6; i++) {
           const ansId = row['ans_' + i + '_id'];
           const ansCorrect = row['ans_' + i + '_correct'];
           const ansPoints = row['ans_' + i + '_points'];
@@ -5361,13 +5344,14 @@
             answerForm.push({
               id: String(ansId).trim(),
               type: 'number',
-              correctAnswer: Number(ansCorrect),
+              correctAnswer: Number(ansCorrect) || 0,
               points: Number(ansPoints) || 5
             });
           }
         }
 
-        // contentHTMLは既存data.jsからIDマッチで取得。なければ自動生成。
+        if (answerForm.length === 0) return;
+
         let contentHTML = '';
         const existingQ = findExistingQuestion(questionId);
         if (existingQ && existingQ.contentHTML) {
@@ -5385,18 +5369,15 @@
           answerForm: answerForm
         };
 
-        if (type === 'q2_commercial') result.q2.push(question);
-        else if (type === 'q3_commercial_closing') result.q3.push(question);
-        else if (type === 'q4_industrial') result.q4.push(question);
-        else if (type === 'q5_industrial') result.q5.push(question);
+        if (type.includes('q2') || (type.includes('commercial') && !type.includes('closing'))) result.q2.push(question);
+        else if (type.includes('q3') || type.includes('closing')) result.q3.push(question);
+        else if (type.includes('q4')) result.q4.push(question);
+        else if (type.includes('q5') || type.includes('industrial')) result.q5.push(question);
       });
 
       return result;
     }
 
-    /**
-     * 既存の questionBank からIDで問題を検索（contentHTML テンプレート取得用）
-     */
     function findExistingQuestion(id) {
       const pools = [
         questionBank.q2_commercial,
@@ -5414,10 +5395,6 @@
       return null;
     }
 
-    /**
-     * answerForm から contentHTML を自動生成
-     * （既存テンプレートが存在しない新規問題用のフォールバック）
-     */
     function generateContentHTML(answerForm, title) {
       let html = '<p>以下の資料に基づき、解答欄の空欄を埋めなさい。</p>';
       html += '<p><strong>' + (title || '演習問題') + '</strong></p>';
@@ -5432,18 +5409,12 @@
       return html;
     }
 
-    /**
-     * 勘定科目マスタシート → accountList + confusableGroups に変換
-     *
-     * スプレッドシート列: account_name, category, confusable_group
-     * confusable_group はカンマ区切りで複数グループに所属可能（例: "1,5,8"）
-     */
     function parseAccountMaster(rows) {
       const accounts = [];
-      const groupMap = {}; // groupNumber → Set of account names
+      const groupMap = {};
 
       rows.forEach(row => {
-        const name = String(row.account_name || '').trim();
+        const name = String(row.account_name || row.account || '').trim();
         if (!name) return;
 
         accounts.push(name);
@@ -5460,7 +5431,6 @@
         }
       });
 
-      // groupMap を confusableGroups 形式（配列の配列）に変換
       const groups = Object.keys(groupMap)
         .sort((a, b) => Number(a) - Number(b))
         .map(key => Array.from(groupMap[key]));
@@ -5468,31 +5438,16 @@
       return { accounts, groups };
     }
 
-    // ================================================================
-    // 学習履歴の送信（バックグラウンド非同期）
-    // ================================================================
-
-    /**
-     * 復習フラグ（is_starred）をトグル送信
-     */
     function sendStarToggle(questionId) {
       if (!GAS_URL) return;
-
       const url = GAS_URL + '?action=star&id=' + encodeURIComponent(questionId);
-      // no-cors: GASリダイレクトの CORS エラー回避
       fetch(url, { mode: 'no-cors' }).catch(err => {
         console.warn('[Loader] ★トグル送信失敗:', err.message);
       });
     }
 
-    /**
-     * 採点結果を送信
-     * @param {string} questionId - 問題ID
-     * @param {boolean} isCorrect - 正解かどうか
-     */
     function sendResult(questionId, isCorrect) {
       if (!GAS_URL) return;
-
       const url = GAS_URL + '?action=result&id=' + encodeURIComponent(questionId) +
         '&result=' + (isCorrect ? 'correct' : 'incorrect');
       fetch(url, { mode: 'no-cors' }).catch(err => {
@@ -5500,28 +5455,15 @@
       });
     }
 
-    /**
-     * 複数問題の採点結果を一括送信（採点完了時に呼び出し）
-     * @param {Array<{id: string, correct: boolean}>} results
-     */
     function sendResultsBatch(results) {
       if (!GAS_URL || !results || results.length === 0) return;
-
-      // 各問題の結果を個別に非同期送信（GASは並列処理不可のため順次）
       results.forEach((r, index) => {
         setTimeout(() => {
           sendResult(r.id, r.correct);
-        }, index * 200); // 200msずつずらして負荷軽減
+        }, index * 200);
       });
     }
 
-    // ================================================================
-    // UI更新
-    // ================================================================
-
-    /**
-     * データソースバッジの表示を更新（大問別の内訳を明示表示）
-     */
     function updateDataSourceBadge() {
       const badge = document.getElementById('data-source-badge');
       if (!badge) return;
@@ -5531,15 +5473,17 @@
       const q3Count = questionBank.q3_commercial_closing ? questionBank.q3_commercial_closing.length : 0;
       const q4Count = questionBank.q4_industrial ? questionBank.q4_industrial.length : 0;
       const q5Count = questionBank.q5_industrial ? questionBank.q5_industrial.length : 0;
-
       const totalQ = q1Count + q2Count + q3Count + q4Count + q5Count;
 
       if (dataSource === 'loading') {
         badge.className = 'data-badge loading';
-        badge.innerHTML = '⏳ スプレッドシートから問題データを取得中...';
+        badge.innerHTML = '⏳ スプレッドシートからデータ取得中...';
       } else if (dataSource === 'spreadsheet') {
         badge.className = 'data-badge live';
-        badge.innerHTML = '📡 スプレッドシート連動中 (計 ' + totalQ + ' 問 [仕訳:' + q1Count + ' / 商業:' + (q2Count + q3Count) + ' / 工業:' + (q4Count + q5Count) + '])';
+        badge.innerHTML = '📡 スプレッドシート連動中 [第1問:' + q1Count + '問 / 第2問:' + q2Count + '問 / 第3問:' + q3Count + '問 / 第4問:' + q4Count + '問 / 第5問:' + q5Count + '問] (計 ' + totalQ + ' 問)';
+      } else if (dataSource === 'error') {
+        badge.className = 'data-badge local';
+        badge.innerHTML = '⚠️ 接続エラー (' + (lastErrorMsg || '通信失敗') + ') ➔ ローカルデータ (計 ' + totalQ + ' 問) で動作中';
       } else {
         badge.className = 'data-badge local';
         badge.innerHTML = '💾 ローカルデータ動作中 (計 ' + totalQ + ' 問)';
